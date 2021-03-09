@@ -57,7 +57,7 @@ public class TupleWriter {
     }
 
     // Supplies a tuple to the tuple writer
-    // Tuple writer will store the tuples and writes to the file on Batch at a time
+    // Tuple writer will store the tuples and writes to the file one Batch at a time
     public boolean next(Tuple nextTuple) {
         if (outBatch == null) {
             outBatch = new Batch(batchsize);

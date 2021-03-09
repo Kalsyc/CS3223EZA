@@ -25,6 +25,7 @@ public class RandomInitialPlan {
     int numJoin;            // Number of joins in this query
     HashMap<String, Operator> tab_op_hash;  // Table name to the Operator
     Operator root;          // Root of the query plan tree
+    boolean isDistinct = false;
 
     public RandomInitialPlan(SQLQuery sqlquery) {
         this.sqlquery = sqlquery;
@@ -34,6 +35,7 @@ public class RandomInitialPlan {
         joinlist = sqlquery.getJoinList();
         groupbylist = sqlquery.getGroupByList();
         numJoin = joinlist.size();
+        isDistinct = sqlquery.isDistinct();
     }
 
     /**
@@ -190,7 +192,7 @@ public class RandomInitialPlan {
     public void createDistinctOp() {
         Operator base = root;
         if (sqlquery.isDistinct()) {
-            root = new Distinct(base, OpType.DISTINCT);
+            root = new Distinct(base, projectlist, OpType.DISTINCT);
             root.setSchema(base.getSchema());
         }
     }

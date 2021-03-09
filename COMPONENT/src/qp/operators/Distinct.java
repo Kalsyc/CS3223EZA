@@ -7,16 +7,18 @@ package qp.operators;
 import qp.utils.*;
 
 import java.util.ArrayList;
+import java.util.Vector;
 
 public class Distinct extends Operator {
 
     Operator base;  // Base operator
-    Condition con;  // Select condition
+    int numBuff;
     int batchsize;  // Number of tuples per outbatch
-
+    protected ArrayList<Attribute> as;
+    protected MergeSort ms;
     /**
      * The following fields are required during
-     * * execution of the select operator
+     * * execution of the distinct operator
      **/
     boolean eos;     // Indicate whether end of stream is reached or not
     Batch inbatch;   // This is the current input buffer
@@ -26,9 +28,10 @@ public class Distinct extends Operator {
     /**
      * constructor
      **/
-    public Distinct(Operator base, int type) {
+    public Distinct(Operator base, ArrayList<Attribute> as, int type) {
         super(type);
         this.base = base;
+        this.as = as;
     }
 
     public Operator getBase() {
@@ -39,6 +42,15 @@ public class Distinct extends Operator {
         this.base = base;
     }
 
+    public ArrayList<Attribute> getProjAttr() {
+        return as;
+    }
+
+    public void setNumBuff(int numBuff) {
+        this.numBuff = numBuff;
+    }
+
+
     /**
      * Opens the connection to the base operator
      * * Also figures out what are the columns to be
@@ -48,8 +60,10 @@ public class Distinct extends Operator {
         /** set number of tuples per batch **/
         int tuplesize = schema.getTupleSize();
         batchsize = Batch.getPageSize() / tuplesize;
-
-        if (!base.open()) return false;
+        ms = new MergeSort(base, as, OpType.DISTINCT, numBuff);
+        ms.setSchema(base.getSchema());
+        ms.setNumBuff(3);
+        if (!ms.open()) return false;
 
         return true;
     }
@@ -58,6 +72,7 @@ public class Distinct extends Operator {
      * Read next tuple from operator
      */
     public Batch next() {
+        System.out.println("in distinct");
         int i = 0;
         if (eos) {
             close();
@@ -73,7 +88,7 @@ public class Distinct extends Operator {
          **/
         while (!outbatch.isFull()) {
             if (start == 0) {
-                inbatch = base.next();
+                inbatch = ms.next();
                 /** There is no more incoming pages from base operator **/
                 if (inbatch == null) {
                     eos = true;
@@ -123,13 +138,14 @@ public class Distinct extends Operator {
      */
     public boolean close() {
         inbatch = null;
+        ms.close();
         base.close();
         return true;
     }
 
     public Object clone() {
         Operator newbase = (Operator) base.clone();
-        Distinct newDistinct = new Distinct(newbase, optype);
+        Distinct newDistinct = new Distinct(newbase, as, optype);
         Schema newSchema = (Schema) newbase.getSchema().clone();
         newDistinct.setSchema(newSchema);
         return newDistinct;
