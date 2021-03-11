@@ -9,20 +9,26 @@ import java.util.*;
 public class MergeSort extends Operator {
     protected Operator base;
     protected int numBuff;
+
+    //for comparison
     protected ArrayList<Attribute> attrSet;
     protected int[] attrIndexArr;
-    protected ArrayList<Batch> singularRun;
-    protected ArrayList<Tuple> tuplesInRun;
+
+    //used in generate sorted runs
     private int numRuns = 0;
     private int track = 0;
     protected int batchSize;
-    ObjectOutputStream out;            // Output file stream
 
-    private String fileName = "mergesort";
-
+    //opening and closing
+    boolean eos;     // Indicate whether end of stream is reached or not
+    Batch outbatch;  // This is the current output buffer
+    Tuple inComing;
+    ArrayList<TupleReader> sortedRunReaders;
     protected ArrayList<String> sortedRuns; //filenames of sorted runs
 
-    protected ObjectInputStream in;
+    private String fileName = "mergesort";
+    //final file reader
+    protected TupleReader out;
 
     /* MergeSort(Operator base, Vector as, int opType) {
         super(opType);
@@ -42,14 +48,14 @@ public class MergeSort extends Operator {
     public boolean open() {
         System.out.println("SortMerge:-----------------in open--------------");
         System.out.println("Number of buffers is: " + numBuff);
-        //eos = false;  // Since the stream is just opened
-        //start = 0;    // Set the cursor to starting position in input buffer
+        eos = false;  // Since the stream is just opened
 
         /** Set number of tuples per page**/
         int tuplesize = schema.getTupleSize();
         batchSize = Batch.getPageSize() / tuplesize;
-        //omg wtf is batch size...
+
         System.out.println("Max batch size is " + batchSize);
+
         if (!base.open()) {
             return false;
         } else {
@@ -63,70 +69,83 @@ public class MergeSort extends Operator {
             }
 
             // Phase 1: Generate sorted runs
-            //sortedFiles = new ArrayList<>();
-//            System.out.println("generate sort runs");
             generateSortedRuns();
 
             // Phase 2: Merge sorted runs
-//            System.out.println("merge sort run: ");
             mergeSortedRuns();
 
-//            testResultFile(sortedFiles.get(0));
-
-            try {
-//                File file = new File(fileName);
-//                file = sortedFiles
-                if (sortedRuns.size() != 1) {
-                    return false;
-                }
-                in = new ObjectInputStream(new FileInputStream(sortedRuns.get(0)));
-            } catch (IOException e) {
-                System.out.println(" Error reading the file");
+            if (sortedRuns.size() != 1) {
                 return false;
             }
+            out = new TupleReader(sortedRuns.get(0), batchSize);
+            out.open();
+            //debugging, printing all
+            /*for (int i=0; i<124; i++) {
+                Tuple next = out.next();
+                if (next == null) {
+                    System.out.println("!!!!!!!!null is at id: " + i);
+                } else {
+                    System.out.println(next._data);
+                }
+            }*/
             return true;
         }
     }
 
     //next has to return the next set of SORTED tuples --> meaning calling open will have to sort the tuples
     public Batch next() {
-//        System.out.println("SortMerge:-----------------in next--------------");
         if (sortedRuns.size() != 1) {
             System.out.println("There is something wrong with sort-merge process. ");
         }
-        try {
-            Batch batch = (Batch) in.readObject();
-            return batch;
-        } catch (IOException e) {
+
+        if (eos) {
+            close();
             return null;
-        } catch (ClassNotFoundException e) {
-            System.out.println("File not found. ");
         }
-        return null;
+
+        /** An output buffer is initiated **/
+        outbatch = new Batch(batchSize);
+
+        /** keep on checking the incoming pages until
+         ** the output buffer is full
+         **/
+        while (!outbatch.isFull()) {
+            inComing = out.next();
+            //System.out.println("in next of sm, incoming is: " + inComing._data);
+            /** There is no more incoming pages from base operator **/
+            if (inComing == null) {
+                eos = true;
+                return outbatch;
+            } else {
+                outbatch.add(inComing);
+            }
+        }
+        return outbatch;
+
     }
 
     public boolean close() {
         File toDelete = new File(sortedRuns.get(0));
         toDelete.delete();
-        try {
-            in.close();
 
-        } catch (IOException e) {
-            e.printStackTrace();
+        //close reader
+        for (int i=0; i<sortedRunReaders.size(); i++) {
+            sortedRunReaders.get(i).close();
         }
-//        op.close();
+        out.close();
         return true;
     }
 
     public void generateSortedRuns() {
         //an arraylist of tuples that fit into B buffers
         System.out.println("Generating sorted runs");
-        int numtuples = 0;
-        tuplesInRun = new ArrayList<>();
         sortedRuns = new ArrayList<>();
         Batch nextBatch = base.next();
+        ArrayList<Tuple> tuplesInRun = new ArrayList<>();
 
         while (nextBatch != null) {
+            int numtuples = 0;
+            tuplesInRun.clear();
             //one sorted run can have (batch x num buffers) of tuples
             for (int i = 0; i < numBuff; i++) {
                 System.out.println("Batch is: " + nextBatch);
@@ -134,31 +153,52 @@ public class MergeSort extends Operator {
                     System.out.println("Batch size is " + nextBatch.size());
 
                     for (int j = 0; j < nextBatch.size(); j++) {
-                        System.out.println("Batch number: " + i + " | tuple is " + nextBatch.get(j)._data);
+                        System.out.println("Batch number: " + i + " | tuple is " + nextBatch.get(j) + " with data: " + nextBatch.get(j)._data);
                         tuplesInRun.add(nextBatch.get(j));
                         numtuples++;
                     }
                 }
 
                 nextBatch = base.next();
+                // size of batch here is 5
+                //System.out.println("Next batch size is: " + nextBatch.size());
             }
 
+            System.out.println("tuplesinrun size is: " + tuplesInRun.size() + " Num tuples size is: " + numtuples);
             //Sort the tuples in the run
             Collections.sort(tuplesInRun, new AttributeSort(attrIndexArr));
 
-            //Write all these to a temp file called smth-MSG0 (for eg)
+            //Write all these to a temp file called mergesort-MSG-(num)
             String tempFileName = fileName + "-MSG-" + numRuns;
-            TupleWriter writeTempFile = new TupleWriter(tempFileName, numtuples);
+            TupleWriter writeTempFile = new TupleWriter(tempFileName, batchSize);
             writeTempFile.open();
 
             for (int i = 0; i < numtuples; i++) {
                 writeTempFile.next(tuplesInRun.get(i));
             }
 
+            System.out.println("Number of tuples written is: " + writeTempFile.getNumTuple());
+            System.out.println("Tuples are written to: " + tempFileName);
+            System.out.println();
             writeTempFile.close();
-            System.out.println("temp file name is: " + tempFileName);
+
+            //debugging
+            System.out.println("!!!CHECKING TUPLES IN FILE FOR DEBUGGING!!!");
+            TupleReader temp = new TupleReader(tempFileName, batchSize);
+            temp.open();
+            for (int i=0; i<numtuples; i++) {
+                System.out.println(temp.next()._data);
+            }
+            temp.close();
+            //close debugging
+
             sortedRuns.add(tempFileName);
             numRuns++;
+        }
+
+        System.out.println("Sorted runs are:");
+        for (int i = 0; i < sortedRuns.size(); i++) {
+            System.out.println(sortedRuns.get(i));
         }
 
     }
@@ -169,7 +209,7 @@ public class MergeSort extends Operator {
      */
     public void mergeSortedRuns() {
         //iterate through all the runs and recrusively merge them
-        System.out.println("Merging sorted runs");
+        System.out.println("-----------------Merging sorted runs-----------------");
 
         //only can merge these number of runs at one time
         int numInputBuff = numBuff - 1; //1 for output buffer
@@ -180,45 +220,62 @@ public class MergeSort extends Operator {
             for (int i = 0; i < numInputBuff; i++) {
                 if (i < sortedRuns.size()) {
                     toMerge.add(sortedRuns.get(i));
-                    sortedRuns.remove(i);
                 }
             }
 
+            System.out.println("The runs to merge are");
+            for (int i = 0; i < toMerge.size(); i++) {
+                System.out.println(toMerge.get(i));
+                sortedRuns.remove(toMerge.get(i));
+            }
+
             String mergedFile = merge(toMerge);
+            /*System.out.println("!!!!!JUST MERGED FILE");
+            TupleReader temp = new TupleReader(mergedFile, batchSize);
+            temp.open();
+            //debugging, printing all
+            for (int i=0; i<30; i++) {
+                Tuple next = temp.next();
+                if (next == null) {
+                    System.out.println("!!!!!!!!null is at id: " + i);
+                } else {
+                    System.out.println(next._data);
+                }
+            }*/
             sortedRuns.add(mergedFile);
+
+            //deleting sorted runs
+            for (int i = 0; i < toMerge.size(); i++) {
+                File toDelete = new File(toMerge.get(i));
+                toDelete.delete();
+            }
+            toMerge.clear();
             System.out.println("after one loop! number of sorted runs is: " + sortedRuns.size());
         }
 
         System.out.println("End of merging sorted runs. Number of runs is: " + sortedRuns.size());
     }
 
-    public String merge(ArrayList<String> tempRuns) {
-        System.out.println("In intermediate merge");
-        int numRuns = tempRuns.size();
-        System.out.println("numruns is: " + numRuns);
-        ArrayList<ObjectInputStream> sortedRunStreams = new ArrayList<>();
+    public String merge(ArrayList<String> toMerge) {
+        System.out.println("----------------In intermediate merge------------------");
+        int numRuns = toMerge.size();
+        System.out.println("numruns to merge is: " + numRuns);
+        sortedRunReaders = new ArrayList<>();
 
+        //preparing output file to write to
         String resultFileName = fileName + "-MS-" + track;
-        ObjectOutputStream resultFile = null;
-        try {
-            resultFile = new ObjectOutputStream(new FileOutputStream(resultFileName));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        TupleWriter writeTempFile = new TupleWriter(resultFileName, batchSize);
+        writeTempFile.open();
+
         Batch outputBuffer = new Batch(batchSize);
-        //read from sorted files
+        //set up to read from sorted files
         for (int i = 0; i < numRuns; i++) {
-            try {
-                ObjectInputStream indivStream = new ObjectInputStream(new FileInputStream(tempRuns.get(i)));
-                sortedRunStreams.add(indivStream);
-            } catch (FileNotFoundException e) {
-                System.out.println("cannot find file with name " + tempRuns.get(i));
-                e.printStackTrace();
-            } catch (IOException e) {
-                System.out.println("error creating output stream");
-                e.printStackTrace();
-            }
+            System.out.println("reading from: " + toMerge.get(i));
+            TupleReader tupread = new TupleReader(toMerge.get(i), batchSize);
+            tupread.open();
+            sortedRunReaders.add(tupread);
         }
+
         //hashmap to map the index of the data to each run
         //get data from sorted runs and sort
         ArrayList<Tuple> inputBuffers = new ArrayList<>();
@@ -227,143 +284,83 @@ public class MergeSort extends Operator {
         //initial filling of buffer //not utilising full buffer if num buff > num runs left
         for (int i = 0; i < numRuns; i++) {
             System.out.println("Initial filling of buffer");
-            Batch currBatch = getNext(sortedRunStreams.get(i));
-            //THIS IS FUNKY CUZ THE SIZE OF THIS BATCH IS MORE THAN IN HERE!! fix it
-            int batchSize = currBatch.size();
-            System.out.println("Initial filling: size of batch is: " + batchSize);
+            //System.out.println("double check READING FROM FILE: " + sortedRunReaders.get(i).getFileName());
             for (int j = 0; j < batchSize; j++) {
-                Tuple currTuple = currBatch.get(j);
-                inputBuffers.add(currTuple);
-                trackTuple.put(currTuple, i);
+                //wtf this reading is wrong why the fuck
+                Tuple currTuple = sortedRunReaders.get(i).next();
+                if (currTuple != null) {
+                    inputBuffers.add(currTuple);
+                    trackTuple.put(currTuple, i);
+                }
+                //System.out.println("Curr tuple is: " + currTuple + " with data: " + currTuple._data);
+
             }
         }
 
-        System.out.println("Done with intial fill");
-        //number of tuples in intiial buffer should be numRuns x max batch size
-        System.out.println("Number of tuples in input buffer is " + inputBuffers.size());
+        System.out.println("Done with intial buffer fill");
+        //number of tuples in intial buffer should be numRuns x max batch size
+        /*System.out.println("Number of tuples in input buffer is " + inputBuffers.size());
         System.out.println("---------------Printing tuples in input buffer--------------");
         for (int i = 0; i < inputBuffers.size(); i++) {
             System.out.println(inputBuffers.get(i)._data);
         }
-        System.out.println("---------------Done--------------");
-
-        System.out.println("Size of hashmap " + inputBuffers.size());
+        System.out.println("---------------Done--------------");*/
+        /*System.out.println("Size of hashmap " + inputBuffers.size());
         System.out.println("---------------Printing hashmap--------------");
         System.out.println(trackTuple.values());
-        System.out.println("---------------Done--------------");
+        System.out.println("---------------Done--------------");*/
 
         //Got an arraylist of tuples from each run, and hashmap that hashes each tuple to the run
         //do this until no more tuple in input buffer
         while (!inputBuffers.isEmpty()) {
             Tuple smallestTuple = Collections.min(inputBuffers, new AttributeSort(attrIndexArr));
-            System.out.println("Smallest tuple is: " + smallestTuple._data);
+
+            //System.out.println("Smallest tuple is: " + smallestTuple._data);
             outputBuffer.add(smallestTuple);
             inputBuffers.remove(smallestTuple);
-            //remove from input buffer
-            /*for (int i = 0; i < inputBuffers.size(); i++) {
-                if (inputBuffers.get(i).equals(smallestTuple)) {
-                    System.out.println("Removing tuple: " + inputBuffers.get(i)._data);
-                    inputBuffers.remove(i);
-                }
-            }*/
-            System.out.println("After removal, num of tups " + inputBuffers.size());
+
             //remove it from hashmap
             trackTuple.remove(smallestTuple);
 
             //check if any input buffers have been zero-ed yet, if yes read in new batch
             for (int i = 0; i < numRuns; i++) {
                 if (!trackTuple.containsValue(i)) {
-                    System.out.println("There is an empty input buffer");
+                    //System.out.println("There is an empty input buffer");
                     //all input inside the buffer for this run is transferred out
-                    //NEED TO CHECK IF
-                    Batch currBatch = getNext(sortedRunStreams.get(i));
-                    if (currBatch != null) {
-                        int batchSize = currBatch.size();
-                        for (int j = 0; j < batchSize; j++) {
-                            Tuple currTuple = currBatch.get(j);
+                    for (int j = 0; j < batchSize; j++) {
+                        Tuple currTuple = sortedRunReaders.get(i).next();
+                        if (currTuple != null) {
                             inputBuffers.add(currTuple);
                             trackTuple.put(currTuple, i);
                         }
                     }
-
-
                 }
             }
 
             //check if output buffer needs to be written out
             if (outputBuffer.isFull()) {
-                try {
-                    resultFile.writeObject(outputBuffer);
-                } catch (IOException e) {
-                    e.printStackTrace();
+                for (int i = 0; i < outputBuffer.size(); i++) {
+                    writeTempFile.next(outputBuffer.get(i));
                 }
                 outputBuffer.clear();
             }
         }
 
+        System.out.println("Out of while-loop, num tuples in input buffer is: " + inputBuffers.size());
+
         //left the records in output buffer to be written
         if (!outputBuffer.isEmpty()) {
-            try {
-                resultFile.writeObject(outputBuffer);
-            } catch (IOException e) {
-                e.printStackTrace();
+            for (int i = 0; i < outputBuffer.size(); i++) {
+                writeTempFile.next(outputBuffer.get(i));
             }
         }
 
         outputBuffer.clear();
         trackTuple.clear();
-        try {
-            resultFile.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        //might have to delete intermediate files
+        writeTempFile.close();
+
         track++;
         return resultFileName;
-    }
-
-
-    protected Batch getNext(ObjectInputStream inputStream) {
-        Batch next = null;
-        try {
-            next = (Batch) inputStream.readObject();
-            if (next.isEmpty()) {
-                System.out.println("Batch is empty");
-                return next;
-            }
-        } catch (IOException e) {
-            return null;
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        return next;
-    }
-
-    public ObjectOutputStream initObjectOutputStream(File file) {
-        try {
-            return new ObjectOutputStream(new FileOutputStream(file, true));
-        } catch (IOException io) {
-            System.out.println("SortMerge: cannot initialize object output stream");
-        }
-        return null;
-    }
-
-    public void appendToObjectOutputStream(ObjectOutputStream out, Batch batch) {
-        try {
-            out.writeObject(batch);
-            out.reset();          //reset the ObjectOutputStream to enable appending result
-
-        } catch (IOException io) {
-            System.out.println("SortMerge: encounter error when append to object output stream");
-        }
-    }
-
-    public void closeObjectOutputStream(ObjectOutputStream out) {
-        try {
-            out.close();
-        } catch (IOException io) {
-            System.out.println("SortMerge: cannot close object output stream");
-        }
     }
 
     class AttributeSort implements Comparator<Tuple> {
@@ -376,11 +373,15 @@ public class MergeSort extends Operator {
         // Used for sorting of tuples using diff attributes
         public int compare(Tuple a, Tuple b) {
             int diff = 0;
-            for (int i = 0; i < attrIndexArr.length; i++) {
-                diff = Tuple.compareTuples(a, b, attrIndexArr[i]);
-                //return the first successful comparison made
-                if (diff != 0) {
-                    return diff;
+            if (a == null || b == null) {
+                return 1;
+            } else {
+                for (int i = 0; i < attrIndexArr.length; i++) {
+                    diff = Tuple.compareTuples(a, b, attrIndexArr[i]);
+                    //return the first successful comparison made
+                    if (diff != 0) {
+                        return diff;
+                    }
                 }
             }
             return diff;

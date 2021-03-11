@@ -84,6 +84,7 @@ public class Select extends Operator {
         while (!outbatch.isFull()) {
             if (start == 0) {
                 inbatch = base.next();
+
                 /** There is no more incoming pages from base operator **/
                 if (inbatch == null) {
                     eos = true;
