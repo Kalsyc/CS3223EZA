@@ -153,7 +153,7 @@ public class MergeSort extends Operator {
                     System.out.println("Batch size is " + nextBatch.size());
 
                     for (int j = 0; j < nextBatch.size(); j++) {
-                        System.out.println("Batch number: " + i + " | tuple is " + nextBatch.get(j) + " with data: " + nextBatch.get(j)._data);
+                        //System.out.println("Batch number: " + i + " | tuple is " + nextBatch.get(j) + " with data: " + nextBatch.get(j)._data);
                         tuplesInRun.add(nextBatch.get(j));
                         numtuples++;
                     }
@@ -183,13 +183,13 @@ public class MergeSort extends Operator {
             writeTempFile.close();
 
             //debugging
-            System.out.println("!!!CHECKING TUPLES IN FILE FOR DEBUGGING!!!");
+            /*System.out.println("!!!CHECKING TUPLES IN FILE FOR DEBUGGING!!!");
             TupleReader temp = new TupleReader(tempFileName, batchSize);
             temp.open();
             for (int i=0; i<numtuples; i++) {
                 System.out.println(temp.next()._data);
             }
-            temp.close();
+            temp.close();*/
             //close debugging
 
             sortedRuns.add(tempFileName);

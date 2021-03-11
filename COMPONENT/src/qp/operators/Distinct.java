@@ -110,7 +110,7 @@ public class Distinct extends Operator {
              **/
             for (i = start; i < inbatch.size() && (!outbatch.isFull()); i++) {
                 Tuple present = inbatch.get(i);
-                System.out.println(present._data);
+                //System.out.println(present._data);
                 /** If the condition is satisfied then
                  ** this tuple is added to the output buffer
                  **/
