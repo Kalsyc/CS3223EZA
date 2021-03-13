@@ -42,7 +42,6 @@ public class OrderBy extends Operator {
     public boolean open() {
         int tuplesize = schema.getTupleSize();
         batchsize = Batch.getPageSize() / tuplesize;
-        Sort sortedBase = new Sort();
 
         return base.open();
     }

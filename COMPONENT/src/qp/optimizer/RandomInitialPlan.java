@@ -212,12 +212,12 @@ public class RandomInitialPlan {
         if (sqlquery.isOrderBy())
         {
             if (sqlquery.isDesc()) {
-                OrderBy operator = new OrderBy(root, true, sqlQuery.getOrderByList(),OpType.ORDERBY);
+                OrderBy operator = new OrderBy(root, true, sqlquery.getOrderByList(),OpType.ORDERBY);
                 operator.setSchema(root.getSchema());
                 root = operator;
             }
             else {
-                OrderBy operator = new OrderBy(root, false, sqlQuery.getOrderByList(), OpType.ORDERBY);
+                OrderBy operator = new OrderBy(root, false, sqlquery.getOrderByList(), OpType.ORDERBY);
                 operator.setSchema(root.getSchema());
                 root = operator;
             }

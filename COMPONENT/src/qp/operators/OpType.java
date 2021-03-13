@@ -1,4 +1,4 @@
-s/**
+/**
  * enumeration of different operator types
  **/
 
@@ -12,4 +12,5 @@ public class OpType {
     public static final int JOIN = 3;
     public static final int DISTINCT = 4;
     public static final int SORT = 5;
+    public static final int ORDERBY = 6;
 }
