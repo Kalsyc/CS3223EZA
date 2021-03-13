@@ -51,7 +51,7 @@ public class PlanCost {
         if (isFeasible) {
             return cost;
         } else {
-            System.out.println("notFeasible");
+            System.out.println("");
             return Long.MAX_VALUE;
         }
     }
@@ -78,6 +78,8 @@ public class PlanCost {
             return getStatistics((Scan) node);
         } else if (node.getOpType() == OpType.DISTINCT) {
             return getStatistics((Distinct) node);
+        } else if (node.getOpType() == OpType.ORDERBY) {
+            return getStatistics((OrderBy) node);
         }
         System.out.println("operator is not supported");
         isFeasible = false;
@@ -273,6 +275,11 @@ public class PlanCost {
         long tuples=calculateCost(node.getBase());
         //becuase compare each incoming tuple with outbatch tuple?
         return tuples * tuples ;
+    }
+
+    protected long getStatistics(OrderBy node) {
+        long tuples=calculateCost(node.getBase());
+        return tuples * tuples;
     }
 
 }

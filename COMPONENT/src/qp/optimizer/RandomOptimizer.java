@@ -72,7 +72,15 @@ public class RandomOptimizer {
             int numbuff = BufferManager.getBuffersPerJoin();
             ((Distinct) node).setNumBuff(numbuff);
             return node;
-        } else {
+        } else if (node.getOpType() == OpType.ORDERBY) {
+            Operator base = makeExecPlan(((OrderBy) node).getBase());
+            ((OrderBy) node).setBase(base);
+            int numbuff = BufferManager.getBuffersPerJoin();
+            ((OrderBy) node).setNumBuff(numbuff);
+            return node;
+        } 
+        
+        else {
             return node;
         }
     }
@@ -370,6 +378,8 @@ public class RandomOptimizer {
             return findNodeAt(((Project) node).getBase(), joinNum);
         } else if (node.getOpType() == OpType.DISTINCT) {
             return findNodeAt(((Distinct) node).getBase(), joinNum);
+        } else if (node.getOpType() == OpType.ORDERBY) {
+            return findNodeAt(((OrderBy) node).getBase(), joinNum);
         } else {
             return null;
         }
@@ -402,6 +412,10 @@ public class RandomOptimizer {
             System.out.println(attrlist);
             modifySchema(base);
             node.setSchema(base.getSchema().subSchema(attrlist));
+        } else if (node.getOpType() == OpType.ORDERBY) {
+            Operator base = ((OrderBy) node).getBase();
+            ArrayList attrlist = ((OrderBy) node).getOrderList();
+            modifySchema(base);
         }
     }
 }

@@ -22,10 +22,12 @@ public class RandomInitialPlan {
     ArrayList<Condition> selectionlist;   // List of select conditons
     ArrayList<Condition> joinlist;        // List of join conditions
     ArrayList<Attribute> groupbylist;
+    ArrayList<Attribute> orderByList;
     int numJoin;            // Number of joins in this query
     HashMap<String, Operator> tab_op_hash;  // Table name to the Operator
     Operator root;          // Root of the query plan tree
     boolean isDistinct = false;
+    boolean isDesc = false;
 
     public RandomInitialPlan(SQLQuery sqlquery) {
         this.sqlquery = sqlquery;
@@ -36,6 +38,8 @@ public class RandomInitialPlan {
         groupbylist = sqlquery.getGroupByList();
         numJoin = joinlist.size();
         isDistinct = sqlquery.isDistinct();
+        isDesc = sqlquery.isDesc();
+        orderByList = sqlquery.getOrderByList();
     }
 
     /**
@@ -56,8 +60,9 @@ public class RandomInitialPlan {
         }
 
         if (sqlquery.getOrderByList().size() > 0) {
-            System.err.println("Orderby is not implemented.");
-            System.exit(1);
+            //System.out.println("FUCK!");
+            //System.err.println("Orderby is not implemented.");
+            //System.exit(1);
         }
 
         tab_op_hash = new HashMap<>();
@@ -74,6 +79,8 @@ public class RandomInitialPlan {
             //System.err.println("Distinct is not implemented.");
             //System.exit(1);
         }
+
+        createOrderByOp();
 
         return root;
     }
@@ -205,6 +212,14 @@ public class RandomInitialPlan {
             root = new Project(base, projectlist, OpType.PROJECT);
             Schema newSchema = base.getSchema().subSchema(projectlist);
             root.setSchema(newSchema);
+        }
+    }
+
+    public void createOrderByOp() {
+        Operator base = root;
+        if (sqlquery.getOrderByList().size() > 0) {
+            root = new OrderBy(base, orderByList, isDesc, OpType.ORDERBY);
+            root.setSchema(base.getSchema());
         }
     }
 
