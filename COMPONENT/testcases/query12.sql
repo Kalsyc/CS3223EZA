@@ -1,0 +1,1 @@
+SELECT DISTINCT CART.status, CART.remarks FROM CART ORDERBY CART.status, CAPT.remarks DESC
