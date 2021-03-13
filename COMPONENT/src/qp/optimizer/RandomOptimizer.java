@@ -66,6 +66,10 @@ public class RandomOptimizer {
             Operator base = makeExecPlan(((Project) node).getBase());
             ((Project) node).setBase(base);
             return node;
+        } else if (node.getOpType() == OpType.ORDERBY) {
+            Operator base = makeExecPlan(((OrderBy) node).getBase());
+            ((OrderBy) node).setBase(base);
+            return node;
         } else {
             return node;
         }

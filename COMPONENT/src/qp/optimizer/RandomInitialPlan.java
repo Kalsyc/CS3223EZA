@@ -193,6 +193,23 @@ public class RandomInitialPlan {
         }
     }
 
+    public void createOrderByOp() {
+        if (sqlquery.isOrderBy())
+        {
+            if (sqlquery.isDesc()) {
+                OrderBy operator = new OrderBy(root, true, sqlQuery.getOrderByList(),OpType.ORDERBY);
+                operator.setSchema(root.getSchema());
+                root = operator;
+            }
+            else {
+                OrderBy operator = new OrderBy(root, false, sqlQuery.getOrderByList(), OpType.ORDERBY);
+                operator.setSchema(root.getSchema());
+                root = operator;
+            }
+
+        }
+    }
+
     private void modifyHashtable(Operator old, Operator newop) {
         for (HashMap.Entry<String, Operator> entry : tab_op_hash.entrySet()) {
             if (entry.getValue().equals(old)) {
