@@ -61,16 +61,18 @@ finalquery ::= sqlquery:s
 						parser.query = s;
             RESULT = s;
         :}
-        |  sqlquery:s ORDERBY attlist:a
+        |  sqlquery:s ORDERBY attlist:a DESC
         {:
             s.setOrderByList(a);
+            s.setIsDesc(true);
             parser.query = s;
             RESULT = s;
         :}
-        | sqlquery:s GROUPBY attlist:a ORDERBY attlist:b
+        | sqlquery:s GROUPBY attlist:a ORDERBY attlist:b DESC
         {:
             s.setGroupByList(a);
             s.setOrderByList(b);
+            s.setIsDesc(true);
             parser.query = s;
             RESULT = s;
         :}

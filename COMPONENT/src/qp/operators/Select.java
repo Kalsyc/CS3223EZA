@@ -84,6 +84,7 @@ public class Select extends Operator {
         while (!outbatch.isFull()) {
             if (start == 0) {
                 inbatch = base.next();
+
                 /** There is no more incoming pages from base operator **/
                 if (inbatch == null) {
                     eos = true;
@@ -103,7 +104,7 @@ public class Select extends Operator {
                     outbatch.add(present);
             }
 
-            /** Modify the cursor to the position requierd
+            /** Modify the cursor to the position required
              ** when the base operator is called next time;
              **/
             if (i == inbatch.size())

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 126	144	2077	nudrjuywwgmwtflsyjfgbccwfojotmgzyvvsaknhvaza	
 174	155	82	pdxhcrboawwiitnmxmrbidvcbotikisbahomrsdckbwj	
 179	107	253	jajsdphukbwcuuotiqsuyngmdfrhduqmxxtqgydhrtlo	
@@ -18,3 +19,25 @@
 115	116	2352	kdoetjskvyetqslxlunkyvufvbfaxwxfkwvbjvvnykyj	
 18	4	344	hhvihcgmaqokipqokvzsfqttgptzuyloeyrsozfahlds	
 186	35	784	zslcnrfzxuzcnphysirneiocozznsyfdzeakjrgaubed	
+=======
+30	107	1424	gjbqeimwbyocwqjsgfjvyjdgsblhvfnvmfncxnwyselq	
+10	125	1595	wmwunpelutbubdmdokvrdtcrnlqkrhawvzwlwptouhwn	
+163	155	362	jjplkdksezkqgtfuqgfcnhfuvjhthrslktkmjvxfemcx	
+43	30	1345	jjlvxnmzzbeutcnapntqucwpuihihipfjsngqjnlvpnk	
+147	183	2192	pqppnjeghtebyxpubejtsuizaeytlknqngpjjalxjork	
+19	109	180	rsghrsgqgqxjalrxtazcazbdbeaqfwfbnulnklyndvfd	
+115	47	321	anftndwckdvrwmaifoxnckvtnxfgifjaouvamlbescwi	
+44	185	2321	asgokrjphndzuvwhziseauodoqidhaycdszluahcbviy	
+93	71	2229	oqqfmpccspgxiefvwybzahaihxgnhpiwxwunlhijlokd	
+65	51	1980	wlylibnscyurmmwrapvhatuxbxagrngenelxfcwjwmcx	
+155	35	2482	wocujyzemamsowmvayqfduqoohogzcslrfpcljdxmvza	
+1	148	963	ynllbxrwudfoitrynvghswqmciynybfiyxhgpvfqozuh	
+83	164	130	ozfreeejgntmgzgmxvlumzvuodanveidjofelcpwbpyu	
+129	169	304	oneyjpoxeguidhwfzkixdppqkwddezsjhshvjgapmmxh	
+101	126	720	kkbilzrkjgbnjwkbxxeynuiykbdldzxdjuiczydtsuyh	
+33	119	837	abgraeieuaxmxfpjcjwbfzjkkhatpksxwpzebvqoatud	
+63	37	440	anlkmxwoqumkdoxvumjtjcpdzvinqforliqwxpfqumph	
+54	3	1824	pznxmusrplhahjbbyfkdgifyklprumlybpolgwngjzmr	
+178	136	1535	awofkgyzcqtdqbmvibggwqtjsagrksqgubkxiwjpktqd	
+9	18	2248	drzbgyfficekxzohbsiojplktotebjwclwgvzbfvwfhp	
+>>>>>>> 82127fd54ad2e940cc33bdded71a962a30d0be95

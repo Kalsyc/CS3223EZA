@@ -1,6 +1,5 @@
 package qp.parser;
 import java_cup.runtime.Symbol;  // definition of scanner/parser interface
-import java.util.*;
 
 
 public class Scaner implements java_cup.runtime.Scanner {
@@ -24,7 +23,7 @@ public class Scaner implements java_cup.runtime.Scanner {
 	private boolean yy_at_bol;
 	private int yy_lexical_state;
 
-	public Scaner (java.io.Reader reader) {
+	public Scaner(java.io.Reader reader) {
 		this ();
 		if (null == reader) {
 			throw (new Error("Error: Bad input stream initializer."));
@@ -32,7 +31,7 @@ public class Scaner implements java_cup.runtime.Scanner {
 		yy_reader = new java.io.BufferedReader(reader);
 	}
 
-	public Scaner (java.io.InputStream instream) {
+	public Scaner(java.io.InputStream instream) {
 		this ();
 		if (null == instream) {
 			throw (new Error("Error: Bad input stream initializer."));
@@ -40,7 +39,7 @@ public class Scaner implements java_cup.runtime.Scanner {
 		yy_reader = new java.io.BufferedReader(new java.io.InputStreamReader(instream));
 	}
 
-	private Scaner () {
+	private Scaner() {
 		yy_buffer = new char[YY_BUFFER_SIZE];
 		yy_buffer_read = 0;
 		yy_buffer_index = 0;
