@@ -26,7 +26,8 @@ public class QueryMain {
 
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
         Batch.setPageSize(getPageSize(args, in));
-
+        
+        //parses the query
         SQLQuery sqlquery = getSQLQuery(args[0]);
         configureBufferManager(sqlquery.getNumJoin(), args, in);
 
