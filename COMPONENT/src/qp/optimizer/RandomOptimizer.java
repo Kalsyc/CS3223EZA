@@ -78,25 +78,19 @@ public class RandomOptimizer {
             int numbuff = BufferManager.getBuffersPerJoin();
             ((Distinct) node).setNumBuff(numbuff);
             return node;
-<<<<<<< HEAD
         } else if (node.getOpType() == OpType.ORDERBY) {
             Operator base = makeExecPlan(((OrderBy) node).getBase());
             ((OrderBy) node).setBase(base);
             int numbuff = BufferManager.getBuffersPerJoin();
             ((OrderBy) node).setNumBuff(numbuff);
             return node;
-        } 
-        
-        else {
-=======
-        } else if (node.getOpType() == OpType.GROUPBY) {
+        }  else if (node.getOpType() == OpType.GROUPBY) {
             Operator base = makeExecPlan(((GroupBy) node).getBase());
             ((GroupBy) node).setBase(base);
             int numbuff = BufferManager.getBuffersPerJoin();
             ((GroupBy) node).setNumBuff(numbuff);
             return node;
         } else {
->>>>>>> 832d3a93bfeb72e77fac1680db64c7269d9102e9
             return node;
         }
     }
