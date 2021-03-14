@@ -215,7 +215,7 @@ public class RandomOptimizer {
 
     /**
      * Selects a random method choice for join wiht number joinNum
-     * *  e.g., Nested loop join, Sort-Merge Join, Hash Join etc..,
+     * *  e.g., Nested loop join, Sort-Merge Join, Hash Join etc..,__
      * * returns the modified plan
      **/
 
