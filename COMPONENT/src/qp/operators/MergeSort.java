@@ -37,6 +37,11 @@ public class MergeSort extends Operator {
 //        this.numBuff = numBuff;
 //        this.fileName = fileName;
     }*/
+    public MergeSort(Operator base, int[] as, int type, int numBuff) {
+        super(type);
+        this.base = base;
+        this.attrIndexArr = as;
+    }
 
     public MergeSort(Operator base, ArrayList<Attribute> as, int type, int numBuff) {
         super(type);
@@ -60,13 +65,16 @@ public class MergeSort extends Operator {
             return false;
         } else {
             //get all the attributes for use in tuple comparison later
-            Schema baseSchema = base.getSchema();
-            attrIndexArr = new int[attrSet.size()];
-            for (int i = 0; i < attrSet.size(); i++) {
-                Attribute attr = (Attribute) attrSet.get(i);
-                int index = baseSchema.indexOf(attr);
-                attrIndexArr[i] = index;
+            if (attrIndexArr == null) {
+                Schema baseSchema = base.getSchema();
+                attrIndexArr = new int[attrSet.size()];
+                for (int i = 0; i < attrSet.size(); i++) {
+                    Attribute attr = (Attribute) attrSet.get(i);
+                    int index = baseSchema.indexOf(attr);
+                    attrIndexArr[i] = index;
+                }
             }
+
 
             // Phase 1: Generate sorted runs
             generateSortedRuns();
