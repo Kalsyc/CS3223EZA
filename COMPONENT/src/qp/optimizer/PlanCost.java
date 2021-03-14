@@ -145,6 +145,8 @@ public class PlanCost {
             case JoinType.NESTEDJOIN:
                 joincost = leftpages * rightpages;
                 break;
+            case JoinType.BLOCKNESTED:
+                joincost = (int) Math.ceil(leftpages / (numbuff- 2)) * rightpages;
             default:
                 System.out.println("join type is not supported");
                 return 0;
