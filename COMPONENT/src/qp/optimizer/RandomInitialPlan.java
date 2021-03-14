@@ -22,10 +22,12 @@ public class RandomInitialPlan {
     ArrayList<Condition> selectionlist;   // List of select conditons
     ArrayList<Condition> joinlist;        // List of join conditions
     ArrayList<Attribute> groupbylist;
+    ArrayList<Attribute> orderByList;
     int numJoin;            // Number of joins in this query
     HashMap<String, Operator> tab_op_hash;  // Table name to the Operator
     Operator root;          // Root of the query plan tree
     boolean isDistinct = false;
+    boolean isDesc = false;
 
     public RandomInitialPlan(SQLQuery sqlquery) {
         this.sqlquery = sqlquery;
@@ -36,6 +38,8 @@ public class RandomInitialPlan {
         groupbylist = sqlquery.getGroupByList();
         numJoin = joinlist.size();
         isDistinct = sqlquery.isDistinct();
+        isDesc = sqlquery.isDesc();
+        orderByList = sqlquery.getOrderByList();
     }
 
     /**
@@ -50,16 +54,6 @@ public class RandomInitialPlan {
      **/
     public Operator prepareInitialPlan() {
 
-        if (sqlquery.getGroupByList().size() > 0) {
-            System.err.println("GroupBy is not implemented.");
-            System.exit(1);
-        }
-
-        if (sqlquery.getOrderByList().size() > 0) {
-            System.err.println("Orderby is not implemented.");
-            System.exit(1);
-        }
-
         tab_op_hash = new HashMap<>();
         createScanOp();
         createSelectOp();
@@ -69,11 +63,17 @@ public class RandomInitialPlan {
         }
         createProjectOp();
 
+        if (!groupbylist.isEmpty()) {
+            createGroupByOp();
+        }
+
         if (sqlquery.isDistinct()) {
             createDistinctOp();
             //System.err.println("Distinct is not implemented.");
             //System.exit(1);
         }
+
+        createOrderByOp();
 
         return root;
     }
@@ -208,11 +208,27 @@ public class RandomInitialPlan {
         }
     }
 
+    public void createOrderByOp() {
+        Operator base = root;
+        if (sqlquery.getOrderByList().size() > 0) {
+            root = new OrderBy(base, orderByList, isDesc, OpType.ORDERBY);
+            root.setSchema(base.getSchema());
+        }
+    }
+
     private void modifyHashtable(Operator old, Operator newop) {
         for (HashMap.Entry<String, Operator> entry : tab_op_hash.entrySet()) {
             if (entry.getValue().equals(old)) {
                 entry.setValue(newop);
             }
         }
+    }
+
+    public void createGroupByOp() {
+        Operator base = root;
+        root = new GroupBy(base, groupbylist, OpType.GROUPBY);
+            // Continue to use the schema of projection
+        Schema newSchema = base.getSchema();
+        root.setSchema(newSchema);
     }
 }

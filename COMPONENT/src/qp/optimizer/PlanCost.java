@@ -51,7 +51,7 @@ public class PlanCost {
         if (isFeasible) {
             return cost;
         } else {
-            System.out.println("notFeasible");
+            System.out.println("");
             return Long.MAX_VALUE;
         }
     }
@@ -78,6 +78,10 @@ public class PlanCost {
             return getStatistics((Scan) node);
         } else if (node.getOpType() == OpType.DISTINCT) {
             return getStatistics((Distinct) node);
+        } else if (node.getOpType() == OpType.ORDERBY) {
+            return getStatistics((OrderBy) node);
+        } else if (node.getOpType() == OpType.GROUPBY) {
+            return getStatistics((GroupBy) node);
         }
         System.out.println("operator is not supported");
         isFeasible = false;
@@ -142,11 +146,15 @@ public class PlanCost {
         long joincost;
 
         switch (joinType) {
+
             case JoinType.NESTEDJOIN:
                 joincost = leftpages * rightpages;
                 break;
+            case JoinType.BLOCKNESTED:
+                joincost = (int) Math.ceil(leftpages / (numbuff- 2)) * rightpages;
+                break;
             default:
-                System.out.println("join type is not supported");
+                System.out.println(" is not supported");
                 return 0;
         }
         cost = cost + joincost;
@@ -273,6 +281,15 @@ public class PlanCost {
         long tuples=calculateCost(node.getBase());
         //becuase compare each incoming tuple with outbatch tuple?
         return tuples * tuples ;
+    }
+
+    protected long getStatistics(OrderBy node) {
+        long tuples = calculateCost(node.getBase());
+        return tuples;
+    }
+
+    protected long getStatistics(GroupBy node) {
+        return calculateCost(node.getBase());
     }
 
 }

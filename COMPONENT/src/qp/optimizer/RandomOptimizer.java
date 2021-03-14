@@ -55,6 +55,12 @@ public class RandomOptimizer {
                     nj.setRight(right);
                     nj.setNumBuff(numbuff);
                     return nj;
+                case JoinType.BLOCKNESTED:
+                    BlockNestedJoin bnj = new BlockNestedJoin((Join) node);
+                    bnj.setLeft(left);
+                    bnj.setRight(right);
+                    bnj.setNumBuff(numbuff);
+                    return bnj;
                 default:
                     return node;
             }
@@ -71,6 +77,18 @@ public class RandomOptimizer {
             ((Distinct) node).setBase(base);
             int numbuff = BufferManager.getBuffersPerJoin();
             ((Distinct) node).setNumBuff(numbuff);
+            return node;
+        } else if (node.getOpType() == OpType.ORDERBY) {
+            Operator base = makeExecPlan(((OrderBy) node).getBase());
+            ((OrderBy) node).setBase(base);
+            int numbuff = BufferManager.getBuffersPerJoin();
+            ((OrderBy) node).setNumBuff(numbuff);
+            return node;
+        }  else if (node.getOpType() == OpType.GROUPBY) {
+            Operator base = makeExecPlan(((GroupBy) node).getBase());
+            ((GroupBy) node).setBase(base);
+            int numbuff = BufferManager.getBuffersPerJoin();
+            ((GroupBy) node).setNumBuff(numbuff);
             return node;
         } else {
             return node;
@@ -197,7 +215,7 @@ public class RandomOptimizer {
 
     /**
      * Selects a random method choice for join wiht number joinNum
-     * *  e.g., Nested loop join, Sort-Merge Join, Hash Join etc..,
+     * *  e.g., Nested loop join, Sort-Merge Join, Hash Join etc..,__
      * * returns the modified plan
      **/
 
@@ -370,6 +388,10 @@ public class RandomOptimizer {
             return findNodeAt(((Project) node).getBase(), joinNum);
         } else if (node.getOpType() == OpType.DISTINCT) {
             return findNodeAt(((Distinct) node).getBase(), joinNum);
+        } else if (node.getOpType() == OpType.ORDERBY) {
+            return findNodeAt(((OrderBy) node).getBase(), joinNum);
+        } else if (node.getOpType() == OpType.GROUPBY) {
+            return findNodeAt(((GroupBy) node).getBase(), joinNum);
         } else {
             return null;
         }
@@ -402,6 +424,14 @@ public class RandomOptimizer {
             System.out.println(attrlist);
             modifySchema(base);
             node.setSchema(base.getSchema().subSchema(attrlist));
+        } else if (node.getOpType() == OpType.ORDERBY) {
+            Operator base = ((OrderBy) node).getBase();
+            ArrayList attrlist = ((OrderBy) node).getOrderList();
+            modifySchema(base);
+        } else if (node.getOpType() == OpType.GROUPBY) {
+            Operator base = ((GroupBy) node).getBase();
+            ArrayList attrlist = ((GroupBy) node).getGroupList();
+            modifySchema(base);
         }
     }
 }

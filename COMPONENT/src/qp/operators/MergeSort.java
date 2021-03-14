@@ -13,6 +13,7 @@ public class MergeSort extends Operator {
     //for comparison
     protected ArrayList<Attribute> attrSet;
     protected int[] attrIndexArr;
+    protected boolean isDesc;
 
     //used in generate sorted runs
     private int numRuns = 0;
@@ -38,10 +39,19 @@ public class MergeSort extends Operator {
 //        this.fileName = fileName;
     }*/
 
+    public MergeSort(Operator base, ArrayList<Attribute> as, int type, int numBuff, boolean isDesc) {
+        super(type);
+        this.base = base;
+        this.attrSet = as;
+        this.isDesc = isDesc;
+    }
+
+
     public MergeSort(Operator base, ArrayList<Attribute> as, int type, int numBuff) {
         super(type);
         this.base = base;
         this.attrSet = as;
+        this.isDesc = false;
     }
 
     //read in the tuples, generate sorted runs, do the merge and write
@@ -64,6 +74,7 @@ public class MergeSort extends Operator {
             attrIndexArr = new int[attrSet.size()];
             for (int i = 0; i < attrSet.size(); i++) {
                 Attribute attr = (Attribute) attrSet.get(i);
+                System.out.println("Wth, this is " + attr.getColName());
                 int index = baseSchema.indexOf(attr);
                 attrIndexArr[i] = index;
             }
@@ -166,7 +177,11 @@ public class MergeSort extends Operator {
 
             System.out.println("tuplesinrun size is: " + tuplesInRun.size() + " Num tuples size is: " + numtuples);
             //Sort the tuples in the run
-            Collections.sort(tuplesInRun, new AttributeSort(attrIndexArr));
+            if (isDesc) {
+                Collections.sort(tuplesInRun, new AttributeSort(attrIndexArr, isDesc));
+            } else {
+                Collections.sort(tuplesInRun, new AttributeSort(attrIndexArr));
+            }
 
             //Write all these to a temp file called mergesort-MSG-(num)
             String tempFileName = fileName + "-MSG-" + numRuns;
@@ -313,7 +328,13 @@ public class MergeSort extends Operator {
         //Got an arraylist of tuples from each run, and hashmap that hashes each tuple to the run
         //do this until no more tuple in input buffer
         while (!inputBuffers.isEmpty()) {
-            Tuple smallestTuple = Collections.min(inputBuffers, new AttributeSort(attrIndexArr));
+            Tuple smallestTuple;
+            if (isDesc) {
+                smallestTuple = Collections.min(inputBuffers, new AttributeSort(attrIndexArr, true));
+            } else {
+                smallestTuple = Collections.min(inputBuffers, new AttributeSort(attrIndexArr));
+            }
+            
 
             //System.out.println("Smallest tuple is: " + smallestTuple._data);
             outputBuffer.add(smallestTuple);
@@ -365,6 +386,12 @@ public class MergeSort extends Operator {
 
     class AttributeSort implements Comparator<Tuple> {
         private int[] attrIndexArr;
+        private boolean isDesc;
+
+        public AttributeSort(int[] attrIndexArr, boolean isDesc) {
+            this.attrIndexArr = attrIndexArr;
+            this.isDesc = isDesc;
+        }
 
         public AttributeSort(int[] attrIndexArr) {
             this.attrIndexArr = attrIndexArr;
@@ -377,7 +404,11 @@ public class MergeSort extends Operator {
                 return 1;
             } else {
                 for (int i = 0; i < attrIndexArr.length; i++) {
-                    diff = Tuple.compareTuples(a, b, attrIndexArr[i]);
+                    if (isDesc) {
+                        diff = Tuple.compareTuples(b, a, attrIndexArr[i]);
+                    } else {
+                        diff = Tuple.compareTuples(a, b, attrIndexArr[i]);
+                    }
                     //return the first successful comparison made
                     if (diff != 0) {
                         return diff;
