@@ -69,6 +69,10 @@ public class RandomInitialPlan {
         }
         createProjectOp();
 
+        if (!groupbylist.isEmpty()) {
+            createGroupByOp();
+        }
+
         if (sqlquery.isDistinct()) {
             createDistinctOp();
             //System.err.println("Distinct is not implemented.");
@@ -214,5 +218,13 @@ public class RandomInitialPlan {
                 entry.setValue(newop);
             }
         }
+    }
+
+    public void createGroupByOp() {
+        Operator base = root;
+        root = new GroupBy(base, groupbylist, OpType.GROUPBY);
+            // Continue to use the schema of projection
+        Schema newSchema = base.getSchema();
+        root.setSchema(newSchema);
     }
 }
