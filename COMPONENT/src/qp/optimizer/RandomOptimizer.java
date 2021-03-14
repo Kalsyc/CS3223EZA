@@ -55,6 +55,12 @@ public class RandomOptimizer {
                     nj.setRight(right);
                     nj.setNumBuff(numbuff);
                     return nj;
+                case JoinType.BLOCKNESTED:
+                    BlockNestedJoin bnj = new BlockNestedJoin((Join) node);
+                    bnj.setLeft(left);
+                    bnj.setRight(right);
+                    bnj.setNumBuff(numbuff);
+                    return bnj;
                 default:
                     return node;
             }
@@ -72,6 +78,7 @@ public class RandomOptimizer {
             int numbuff = BufferManager.getBuffersPerJoin();
             ((Distinct) node).setNumBuff(numbuff);
             return node;
+<<<<<<< HEAD
         } else if (node.getOpType() == OpType.ORDERBY) {
             Operator base = makeExecPlan(((OrderBy) node).getBase());
             ((OrderBy) node).setBase(base);
@@ -81,6 +88,15 @@ public class RandomOptimizer {
         } 
         
         else {
+=======
+        } else if (node.getOpType() == OpType.GROUPBY) {
+            Operator base = makeExecPlan(((GroupBy) node).getBase());
+            ((GroupBy) node).setBase(base);
+            int numbuff = BufferManager.getBuffersPerJoin();
+            ((GroupBy) node).setNumBuff(numbuff);
+            return node;
+        } else {
+>>>>>>> 832d3a93bfeb72e77fac1680db64c7269d9102e9
             return node;
         }
     }
@@ -380,6 +396,8 @@ public class RandomOptimizer {
             return findNodeAt(((Distinct) node).getBase(), joinNum);
         } else if (node.getOpType() == OpType.ORDERBY) {
             return findNodeAt(((OrderBy) node).getBase(), joinNum);
+        } else if (node.getOpType() == OpType.GROUPBY) {
+            return findNodeAt(((GroupBy) node).getBase(), joinNum);
         } else {
             return null;
         }
@@ -416,6 +434,11 @@ public class RandomOptimizer {
             Operator base = ((OrderBy) node).getBase();
             ArrayList attrlist = ((OrderBy) node).getOrderList();
             modifySchema(base);
+        } else if (node.getOpType() == OpType.GROUPBY) {
+            Operator base = ((GroupBy) node).getBase();
+            ArrayList attrlist = ((GroupBy) node).getProjAttr();
+            modifySchema(base);
+            node.setSchema(base.getSchema().subSchema(attrlist));
         }
     }
 }
