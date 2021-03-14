@@ -9,4 +9,8 @@ public class GroupBy extends MergeSort {
         super(base, as, type, numBuff);
     }
 
+	public ArrayList<Attribute> getProjAttr() {
+        return attrSet;
+    }
+
 } 
