@@ -75,7 +75,6 @@ public class MergeSort extends Operator {
             return false;
         } else {
             //get all the attributes for use in tuple comparison later
-<<<<<<< HEAD
             if (attrIndexArr == null) {
                 Schema baseSchema = base.getSchema();
                 attrIndexArr = new int[attrSet.size()];
@@ -84,30 +83,18 @@ public class MergeSort extends Operator {
                     int index = baseSchema.indexOf(attr);
                     attrIndexArr[i] = index;
                 }
-=======
-            Schema baseSchema = base.getSchema();
-            attrIndexArr = new int[attrSet.size()];
-            for (int i = 0; i < attrSet.size(); i++) {
-                Attribute attr = (Attribute) attrSet.get(i);
-                System.out.println("Wth, this is " + attr.getColName());
-                int index = baseSchema.indexOf(attr);
-                attrIndexArr[i] = index;
->>>>>>> 5580a7dca7a04cae5667292cbcb3ba48f63688eb
-            }
+                // Phase 1: Generate sorted runs
+                generateSortedRuns();
 
+                // Phase 2: Merge sorted runs
+                mergeSortedRuns();
 
-            // Phase 1: Generate sorted runs
-            generateSortedRuns();
-
-            // Phase 2: Merge sorted runs
-            mergeSortedRuns();
-
-            if (sortedRuns.size() != 1) {
-                return false;
-            }
-            out = new TupleReader(sortedRuns.get(0), batchSize);
-            out.open();
-            //debugging, printing all
+                if (sortedRuns.size() != 1) {
+                    return false;
+                }
+                out = new TupleReader(sortedRuns.get(0), batchSize);
+                out.open();
+                //debugging, printing all
             /*for (int i=0; i<124; i++) {
                 Tuple next = out.next();
                 if (next == null) {
@@ -116,8 +103,10 @@ public class MergeSort extends Operator {
                     System.out.println(next._data);
                 }
             }*/
-            return true;
+            }
         }
+
+        return true;
     }
 
     //next has to return the next set of SORTED tuples --> meaning calling open will have to sort the tuples
