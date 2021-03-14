@@ -5,8 +5,8 @@ import qp.utils.Attribute;
 
 public class GroupBy extends MergeSort {
 
-    public GroupBy(Operator base, ArrayList<Attribute> as, int type, int numBuff) {
-        super(base, as, type, numBuff);
+    public GroupBy(Operator base, ArrayList<Attribute> as, int type) {
+        super(base, as, type, 4);
     }
 
 	public ArrayList<Attribute> getProjAttr() {
