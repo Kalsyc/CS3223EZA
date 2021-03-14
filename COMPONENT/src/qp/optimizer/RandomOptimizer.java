@@ -430,9 +430,8 @@ public class RandomOptimizer {
             modifySchema(base);
         } else if (node.getOpType() == OpType.GROUPBY) {
             Operator base = ((GroupBy) node).getBase();
-            ArrayList attrlist = ((GroupBy) node).getProjAttr();
+            ArrayList attrlist = ((GroupBy) node).getGroupList();
             modifySchema(base);
-            node.setSchema(base.getSchema().subSchema(attrlist));
         }
     }
 }
