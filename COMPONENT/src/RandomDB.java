@@ -1,4 +1,4 @@
-import qp.utils.Attribute;
+    import qp.utils.Attribute;
 import qp.utils.Schema;
 
 import java.io.*;
@@ -77,6 +77,8 @@ public class RandomDB {
                     // System.out.println("String");
                 } else if (datatype[i].equals("REAL")) {
                     type = Attribute.REAL;
+                } else if (datatype[i].equals("TIME")) {
+                    type = Attribute.TIME;
                 } else {
                     type = -1;
                     System.err.println("invalid data type");
@@ -137,6 +139,9 @@ public class RandomDB {
                                 fk.get(j).add(value);
                             }
                         }
+                    } else if (datatype[j].equals("TIME")) {
+                        String time = rdb.randDate();
+                        outtbl.print(time + "\t");
                     }
                 }
                 if (i != numtuple - 1)
@@ -165,6 +170,8 @@ public class RandomDB {
                         else
                             outstat.print(range[i] + "\t");
                     }
+                } else if (datatype[i].equals("TIME")) {
+                    outstat.print(numtuple + "\t");
                 }
             }
             outstat.close();
@@ -183,6 +190,16 @@ public class RandomDB {
         for (int j = 0; j < range; ++j)
             s += ((char) (97 + random.nextInt(26)));
         return s;
+    }
+
+    public String randDate() {
+        int h = random.nextInt(24);
+        int m = random.nextInt(59);
+        int s = random.nextInt(59);
+        String hh = h < 10 ? "0" + h : "" + h;
+        String mm = m < 10 ? "0" + m : "" + m;
+        String ss = s < 10 ? "0" + s : "" + s;
+        return hh + ":" + mm + ":" + ss;
     }
 
     public int getnumdistinct(boolean[] key) {
