@@ -2,6 +2,7 @@ package qp.operators;
 
 import qp.utils.Attribute;
 import qp.utils.Batch;
+import qp.utils.Condition;
 import qp.utils.Tuple;
 
 import java.io.EOFException;
@@ -14,11 +15,11 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 
 public class BlockNestedJoin extends Join {
-	
+
 	static int filenum = 0;         // To get unique filenum for this operation
     int batchsize;                  // Number of tuples per out batch
-    int leftindex;   				// Index of the join attribute in left table
-    int rightindex;  				// Index of the join attribute in right table
+    ArrayList<Integer> leftindex;   				// Index of the join attribute in left table
+    ArrayList<Integer> rightindex;  				// Index of the join attribute in right table
     String rfname;                  // The file name where the right table is materialized
     Batch outbatch;                 // Buffer page for output
     Batch leftbatch;                // Buffer page for left input stream
@@ -31,7 +32,7 @@ public class BlockNestedJoin extends Join {
     boolean eosr;                   // Whether end of stream (right table) is reached
 
     public BlockNestedJoin(Join jn) {
-        super(jn.getLeft(), jn.getRight(), jn.getCondition(), jn.getOpType());
+        super(jn.getLeft(), jn.getRight(), jn.getConditionList(), jn.getOpType());
         schema = jn.getSchema();
         jointype = jn.getJoinType();
         numBuff = jn.getNumBuff();
@@ -47,11 +48,16 @@ public class BlockNestedJoin extends Join {
 		/** select number of tuples per batch **/
         int tuplesize = schema.getTupleSize();
         batchsize = Batch.getPageSize() / tuplesize;
-
-		Attribute leftattr = getCondition().getLhs();
-		Attribute rightattr = (Attribute) getCondition().getRhs();
-		leftindex = left.getSchema().indexOf(leftattr);
-		rightindex = right.getSchema().indexOf(rightattr);
+        //System.out.println("num buff is: " + numBuff + " batchsize is: " + batchsize);
+        /** find indices attributes of join conditions **/
+        leftindex = new ArrayList<>();
+        rightindex = new ArrayList<>();
+        for (Condition con : conditionList) {
+            Attribute leftattr = con.getLhs();
+            Attribute rightattr = (Attribute) con.getRhs();
+            leftindex.add(left.getSchema().indexOf(leftattr));
+            rightindex.add(right.getSchema().indexOf(rightattr));
+        }
 
 		Batch rightpage;
 
@@ -96,8 +102,10 @@ public class BlockNestedJoin extends Join {
      * * And returns a page of output tuples
      **/
     public Batch next() {
+        //System.out.println("in next");
         int i, j;
         if (eosl) {
+            close();
             return null;
         }
         outbatch = new Batch(batchsize);
@@ -106,16 +114,12 @@ public class BlockNestedJoin extends Join {
             if (lcurs == 0 && eosr == true) {
                 /** new left block is to be fetched**/
                 ArrayList<Batch> leftblock = new ArrayList<>();
-                
                 for (int k = 0; k < numBuff - 2; k++) {
                     Batch batch = (Batch) left.next();
                     if (batch == null || batch.isEmpty()) {
-                        eosl = true;
                         break;
                     }
-                    
                     leftblock.add(batch);
-                    
                 }
 
                 if (leftblock.isEmpty()) {
@@ -130,6 +134,12 @@ public class BlockNestedJoin extends Join {
                     }
                 }
 
+                /*System.out.println("left batch size is: " + leftbatch.size());
+                System.out.println("To debug----------------- Printing leftbatch");
+                for (int p=0; p<leftbatch.size(); p++) {
+                    System.out.println(leftbatch.get(p)._data);
+                }*/
+
                 try {
                     in = new ObjectInputStream(new FileInputStream(rfname));
                     eosr=false;
@@ -142,16 +152,29 @@ public class BlockNestedJoin extends Join {
             while (eosr == false) {
                 try {
                     if (rcurs == 0 && lcurs == 0) {
+                        //System.out.println("Reading new right batch in");
                         rightbatch = (Batch) in.readObject();
+                        //System.out.println("Batch size is: " + rightbatch.size());
                     }
                     for (i = lcurs; i < leftbatch.size(); ++i) {
+
                         for (j = rcurs; j < rightbatch.size(); ++j) {
                             Tuple lefttuple = leftbatch.get(i);
                             Tuple righttuple = rightbatch.get(j);
+                            /*System.out.println("------------------------------------");
+                            System.out.println("Left tuple is: " + lefttuple._data);
+                            System.out.println("Right tuple is: " + righttuple._data);*/
+
                             if (lefttuple.checkJoin(righttuple, leftindex, rightindex)) {
+                                //System.out.println("Joining");
+
                                 Tuple outtuple = lefttuple.joinWith(righttuple);
+                                //System.out.println("------------------------------------");
+
                                 outbatch.add(outtuple);
                                 if (outbatch.isFull()) {
+                                    //System.out.println("outbatch is full");
+                                    //System.out.println("outbatch size is: " + outbatch.size());
                                     if (i == leftbatch.size() - 1 && j == rightbatch.size() - 1) {  //case 1
                                         lcurs = 0;
                                         rcurs = 0;
