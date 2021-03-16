@@ -55,7 +55,15 @@ finalquery ::= sqlquery:s
 			parser.query = s;
 			RESULT = s;
 		:}
-		| sqlquery:s GROUPBY attlist:a
+				| sqlquery:s GROUPBY attlist:a ORDERBY attlist:b DESC
+        {:
+            s.setGroupByList(a);
+            s.setOrderByList(b);
+            s.setIsDesc(true);
+            parser.query = s;
+            RESULT = s;
+        :}
+				| sqlquery:s GROUPBY attlist:a
         {:
             s.setGroupByList(a);
 			parser.query = s;
@@ -75,14 +83,7 @@ finalquery ::= sqlquery:s
             parser.query = s;
             RESULT = s;
         :}
-        | sqlquery:s GROUPBY attlist:a ORDERBY attlist:b DESC
-        {:
-            s.setGroupByList(a);
-            s.setOrderByList(b);
-            s.setIsDesc(true);
-            parser.query = s;
-            RESULT = s;
-        :}
+
 		;
 
 sqlquery ::= SELECT attlist:a FROM tablelist:t WHERE conditionlist:c
