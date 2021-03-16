@@ -2,6 +2,7 @@ package qp.operators;
 import qp.utils.*;
 import java.util.ArrayList;
 import qp.utils.Attribute;
+import qp.optimizer.BufferManager;
 
 public class GroupBy extends Operator {
 
@@ -43,9 +44,18 @@ public class GroupBy extends Operator {
         last = null;
         int tuplesize = schema.getTupleSize();
         batchsize = Batch.getPageSize() / tuplesize;
-        ms = new MergeSort(base, as, OpType.GROUPBY, numBuff);
+
+        Schema baseSchema = base.getSchema();
+        ArrayList<Integer> attrIndex= new ArrayList<>();
+        for (int i = 0; i < as.size(); i++) {
+            Attribute attr = (Attribute) as.get(i);
+            int index = baseSchema.indexOf(attr);
+            attrIndex.add(index);
+        }
+
+        ms = new MergeSort(base, attrIndex, OpType.GROUPBY, numBuff);
         ms.setSchema(base.getSchema());
-        ms.setNumBuff(4);
+        ms.setNumBuff(BufferManager.getNumBuffer());
         if (!ms.open()) return false;
         return true;
     }
@@ -79,7 +89,7 @@ public class GroupBy extends Operator {
                 last = present;
             }
         }
-        
+
         return outbatch;
     }
 
@@ -98,4 +108,4 @@ public class GroupBy extends Operator {
         return newGroupBy;
     }
 
-} 
+}

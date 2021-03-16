@@ -5,6 +5,7 @@
 package qp.operators;
 
 import qp.utils.*;
+import java.time.LocalTime;
 
 public class Select extends Operator {
 
@@ -216,6 +217,34 @@ public class Select extends Operator {
             } else {
                 System.out.println("Select: Incorrect condition operator");
             }
+        } else if (datatype == Attribute.TIME) {
+            LocalTime srcVal = LocalTime.parse((String) srcValue);
+            int flag = 0;
+            LocalTime checkVal = LocalTime.MAX;
+            if (con.getRhs() instanceof String) {
+                checkVal = LocalTime.parse((String) con.getRhs());
+            } else if (con.getRhs() instanceof Attribute) {
+                checkVal = LocalTime.parse((String) tuple.dataAt(schema.indexOf((Attribute) con.getRhs())));
+            } else {
+                System.out.println("Select: Malformed condition");
+            }
+            flag = srcVal.compareTo(checkVal);
+            if (exprtype == Condition.LESSTHAN) {
+                if (flag < 0) return true;
+            } else if (exprtype == Condition.GREATERTHAN) {
+                if (flag > 0) return true;
+            } else if (exprtype == Condition.LTOE) {
+                if (flag <= 0) return true;
+            } else if (exprtype == Condition.GTOE) {
+                if (flag >= 0) return true;
+            } else if (exprtype == Condition.EQUAL) {
+                if (flag == 0) return true;
+            } else if (exprtype == Condition.NOTEQUAL) {
+                if (flag != 0) return true;
+            } else {
+                System.out.println("Select: Incorrect condition operator");
+            }
+
         }
         return false;
     }

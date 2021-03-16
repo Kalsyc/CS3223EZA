@@ -61,6 +61,12 @@ public class RandomOptimizer {
                     bnj.setRight(right);
                     bnj.setNumBuff(numbuff);
                     return bnj;
+                case JoinType.SORTMERGE:
+                    SortMergeJoin smj = new SortMergeJoin((Join) node);
+                    smj.setLeft(left);
+                    smj.setRight(right);
+                    smj.setNumBuff(numbuff);
+                    return smj;
                 default:
                     return node;
             }
@@ -147,7 +153,7 @@ public class RandomOptimizer {
             Debug.PPrint(initPlan);
             PlanCost pc = new PlanCost();
             long initCost = pc.getCost(initPlan);
-            System.out.println(initCost);
+            System.out.println("\nInitial Cost: " + initCost);
 
             boolean flag = true;
             long minNeighborCost = initCost;   //just initialization purpose;
@@ -209,7 +215,7 @@ public class RandomOptimizer {
         System.out.println("\n\n\n");
         System.out.println("---------------------------Final Plan----------------");
         Debug.PPrint(finalPlan);
-        System.out.println("  " + MINCOST);
+        System.out.println("\nFinal Cost: " + MINCOST);
         return finalPlan;
     }
 

@@ -59,6 +59,8 @@ public class ConvertTxtToTbl {
                     data.add(Float.valueOf(dataElement));
                 } else if (datatype == Attribute.STRING) {
                     data.add(dataElement);
+                } else if (datatype == Attribute.TIME) {
+                    data.add(dataElement);
                 } else {
                     System.err.println("Invalid data type");
                     System.exit(1);

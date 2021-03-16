@@ -88,25 +88,23 @@ public class QueryMain {
      * As buffer manager is not implemented, just input the number of buffers available.
      **/
     private static void configureBufferManager(int numJoin, String[] args, BufferedReader in) {
-        if (numJoin != 0) {
-            int numBuff = 1000;
-            if (args.length < 4) {
-                System.out.println("enter the number of buffers available");
-                try {
-                    String temp = in.readLine();
-                    numBuff = Integer.parseInt(temp);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            } else numBuff = Integer.parseInt(args[3]);
-            BufferManager bm = new BufferManager(numBuff, numJoin);
+        int numBuff = 1000;
+        if (args.length < 4) {
+            System.out.println("enter the number of buffers available");
+            try {
+                String temp = in.readLine();
+                numBuff = Integer.parseInt(temp);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else numBuff = Integer.parseInt(args[3]);
+        BufferManager bm;
+        if (numJoin > 0) {
+            bm = new BufferManager(numBuff, numJoin);
+        } else {
+            bm = new BufferManager(numBuff);
         }
-
         /** Check the number of buffers available is enough or not **/
-        int numBuff = BufferManager.getBuffersPerJoin();
-        System.out.println("DEBUGGGGG");
-        System.out.println(numJoin);
-        System.out.println(numBuff);
         if (numJoin > 0 && numBuff < 3) {
             System.out.println("Minimum 3 buffers are required per join operator ");
             System.exit(1);

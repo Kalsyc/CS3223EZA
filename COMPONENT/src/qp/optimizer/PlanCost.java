@@ -153,6 +153,10 @@ public class PlanCost {
             case JoinType.BLOCKNESTED:
                 joincost = (int) Math.ceil(leftpages / (numbuff- 2)) * rightpages;
                 break;
+            case JoinType.SORTMERGE:
+                joincost = leftpages;  
+            //joincost = (int) Math.ceil(leftpages / (numbuff- 2)) * rightpages;
+                break;
             default:
                 System.out.println(" is not supported");
                 return 0;

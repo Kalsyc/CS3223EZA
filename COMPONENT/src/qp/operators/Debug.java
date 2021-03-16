@@ -5,6 +5,7 @@
 package qp.operators;
 
 import qp.utils.*;
+import java.util.ArrayList;
 
 public class Debug {
 
@@ -22,6 +23,19 @@ public class Debug {
         } else {
             System.out.print(aggregates[aggregate] + "(" + tabname + "." + colname + ")  ");
         }
+    }
+
+    /**
+     * 
+     * print the list of attributes
+     */
+    public static void PPrint(ArrayList<Attribute> attrList) {
+        System.out.print('(');
+        for (Attribute a: attrList) {
+            System.out.print(a.getColName());
+            System.out.print(',');
+        }
+        System.out.print(')');
     }
 
     /**
@@ -102,21 +116,34 @@ public class Debug {
             System.out.print("]  ");
             PPrint(((Join) node).getRight());
             System.out.print(")");
-
         } else if (optype == OpType.SELECT) {
             System.out.print("Select(");
             PPrint(((Select) node).getBase());
             System.out.print("  '");
             PPrint(((Select) node).getCondition());
             System.out.print(")");
-
         } else if (optype == OpType.PROJECT) {
             System.out.print("Project(");
             PPrint(((Project) node).getBase());
             System.out.print(")");
-
         } else if (optype == OpType.SCAN) {
             System.out.print(((Scan) node).getTabName());
+        } else if (optype == OpType.GROUPBY) {
+            System.out.print("Group By(");
+            PPrint(((GroupBy) node).getBase());
+            System.out.print(",");
+            PPrint(((GroupBy) node).getGroupList());
+            System.out.print(")");
+        } else if (optype == OpType.ORDERBY) {
+            System.out.print("Order By(");
+            PPrint(((OrderBy) node).getBase());
+            System.out.print(",");
+            PPrint(((OrderBy) node).getOrderList());
+            System.out.print(")");
+        } else if (optype == OpType.DISTINCT) {
+            System.out.print("Distinct(");
+            PPrint(((Distinct) node).getBase());
+            System.out.print(")");
         }
     }
 
@@ -137,6 +164,7 @@ public class Debug {
         }
         System.out.println();
     }
+
 
 
     /**

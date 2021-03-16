@@ -1,6 +1,7 @@
 package qp.operators;
 import qp.utils.*;
 import java.util.ArrayList;
+import qp.optimizer.BufferManager;
 
 public class OrderBy extends Operator {
     
@@ -56,9 +57,18 @@ public class OrderBy extends Operator {
         last = null;
         int tuplesize = schema.getTupleSize();
         batchsize = Batch.getPageSize() / tuplesize;
-        ms = new MergeSort(base, as, OpType.ORDERBY, numBuff, isDesc);
+
+        Schema baseSchema = base.getSchema();
+        ArrayList<Integer> attrIndex= new ArrayList<>();
+        for (int i = 0; i < as.size(); i++) {
+            Attribute attr = (Attribute) as.get(i);
+            int index = baseSchema.indexOf(attr);
+            attrIndex.add(index);
+        }
+
+        ms = new MergeSort(base, attrIndex, OpType.ORDERBY, numBuff, isDesc);
         ms.setSchema(base.getSchema());
-        ms.setNumBuff(4);
+        ms.setNumBuff(BufferManager.getNumBuffer());
         if (!ms.open()) return false;
         return true;
     }
