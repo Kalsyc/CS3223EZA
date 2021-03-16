@@ -9,6 +9,7 @@ import qp.utils.Batch;
 import qp.utils.Condition;
 import qp.utils.Tuple;
 
+import javax.sound.midi.SysexMessage;
 import java.io.*;
 import java.util.ArrayList;
 
@@ -16,8 +17,8 @@ public class SortMergeJoin extends Join {
 
     static int filenum = 0;         // To get unique filenum for this operation
     int batchsize;                  // Number of tuples per out batch
-    int[] leftindex;   // Indices of the join attributes in left table
-    int[] rightindex;  // Indices of the join attributes in right table
+    ArrayList<Integer> leftindex;   // Indices of the join attributes in left table
+    ArrayList<Integer> rightindex;  // Indices of the join attributes in right table
     String rfname;                  // The file name where the right table is materialized
     Batch outbatch;                 // Buffer page for output
     Batch leftbatch;                // Buffer page for left input stream
@@ -31,6 +32,8 @@ public class SortMergeJoin extends Join {
 
     MergeSort sortedLeft;
     MergeSort sortedRight;
+    ArrayList<Integer> rightTrack = new ArrayList<>();
+    ArrayList<Integer> leftTrack = new ArrayList<>();
 
     public SortMergeJoin(Join jn) {
         super(jn.getLeft(), jn.getRight(), jn.getConditionList(), jn.getOpType());
@@ -45,145 +48,168 @@ public class SortMergeJoin extends Join {
      * * Opens the connections
      **/
     public boolean open() {
+        System.out.println("In sortmerge join");
         /** select number of tuples per batch **/
         int tuplesize = schema.getTupleSize();
         batchsize = Batch.getPageSize() / tuplesize;
 
         /** find indices attributes of join conditions **/
-        leftindex = new int[conditionList.size()];
-        rightindex = new int[conditionList.size()];
-        for (int i=0; i<conditionList.size(); i++) {
-            Attribute leftattr = conditionList.get(i).getLhs();
-            Attribute rightattr = (Attribute) conditionList.get(i).getRhs();
-            leftindex[i] = left.getSchema().indexOf(leftattr);
-            rightindex[i] = right.getSchema().indexOf(rightattr);
+        leftindex = new ArrayList<>();
+        rightindex = new ArrayList<>();
+        for (Condition con : conditionList) {
+            Attribute leftattr = con.getLhs();
+            System.out.println("left attr is: " + leftattr + "with index: " + left.getSchema().indexOf(leftattr));
+            Attribute rightattr = (Attribute) con.getRhs();
+            System.out.println("right attr is: " + rightattr + "with index: " + right.getSchema().indexOf(rightattr));
+            leftindex.add(left.getSchema().indexOf(leftattr));
+            rightindex.add(right.getSchema().indexOf(rightattr));
         }
+        System.out.println("in smj, numbuff is: " + numBuff);
 
-        sortedRight = new MergeSort(right, rightindex, optype, numBuff);
-        sortedLeft = new MergeSort(left, leftindex, optype, numBuff);
+        System.out.println("=====left schema====");
+        Debug.PPrint(left.getSchema());
+        System.out.println();
+        //System.out.println("sorting left");
+        sortedLeft = new MergeSort(left, leftindex, optype, numBuff, "left");
+        //System.out.println("DONE SORTING LEFT");
 
-        Batch rightpage;
+
+        System.out.println("=====right schema====");
+        Debug.PPrint(right.getSchema());
+        System.out.println();
+        //System.out.println("sorting right");
+        sortedRight = new MergeSort(right, rightindex, optype, numBuff, "right");
+        //System.out.println("DONE SORTING RIGHT");
+        //System.out.println("first tuple in sortedRight is: " + sortedRight.next().get(0));
+
+        outbatch=new Batch(batchsize);
+
+
+        //System.out.println("first tuple in sortedLedt is: " + sortedLeft.next().get(0));
 
         /** initialize the cursors of input buffers **/
         lcurs = 0;
         rcurs = 0;
-        eosl = false;
-        /** because right stream is to be repetitively scanned
-         ** if it reached end, we have to start new scan
-         **/
-        eosr = true;
 
-        /** Right hand side table is to be materialized
-         ** for the Nested join to perform
-         **/
-        if (!right.open()) {
-            return false;
-        } else {
-            /** If the right operator is not a base table then
-             ** Materialize the intermediate result from right
-             ** into a file
-             **/
-            filenum++;
-            rfname = "NJtemp-" + String.valueOf(filenum);
-            try {
-                ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(rfname));
-                while ((rightpage = right.next()) != null) {
-                    out.writeObject(rightpage);
-                }
-                out.close();
-            } catch (IOException io) {
-                System.out.println("NestedJoin: Error writing to temporary file");
-                return false;
-            }
-            if (!right.close())
-                return false;
-        }
-        if (sortedLeft.open() && sortedRight.open())
+        if (sortedLeft.open() && sortedRight.open()) {
             return true;
-        else
-            return false;
+        }
+
+
+        return false;
     }
 
     /**
      * from input buffers selects the tuples satisfying join condition
      * * And returns a page of output tuples
      **/
+
+    //Wwhile left and right not null, read in batch, take a value from right and match with left
+    //if match, track the cursor position of the first matched value scan through entire left batch, if dup values end WITHIN bahc, jsut compare and output
+    //then move onto next tuple on right. If same as top, backtrack, else search through left for match
+    //if matched value matches the ENTIRE batch, check if next value on right is same as curr, if yes, write the left batch to file, read in next one write till all dups written
+    // if no, then just read and match and output and get next left batch
     public Batch next() {
-        int i, j;
+        System.out.println("in smj next");
         if (eosl) {
             return null;
         }
-        outbatch = new Batch(batchsize);
 
-        while (!outbatch.isFull()) {
-            if (lcurs == 0 && eosr == true) {
-                /** new left page is to be fetched**/
-                leftbatch = (Batch) left.next();
-                if (leftbatch == null) {
-                    eosl = true;
-                    return outbatch;
+        leftbatch = sortedLeft.next();
+        //Tuple fromLeft = leftbatch.get(0);
+        rightbatch = sortedRight.next();
+        System.out.println("Size of leftbatch is:" + leftbatch.size());
+        System.out.println("first tuple in leftbatch is: " + leftbatch.get(0)._data);
+
+        System.out.println("Size of rightbatch is:" + rightbatch.size());
+        System.out.println("first tuple in rightbatch is: " + rightbatch.get(0)._data);
+        //Tuple fromRight = rightbatch.get(0);
+        //rightTrack.add(0);
+        int leftPointer = 0;
+        int rightPointer = 0;
+        Tuple prevTuple = null;
+        ArrayList<Integer> trackMatch = new ArrayList<>();
+
+        while (sortedLeft != null && sortedRight != null) {
+            while (Tuple.compareTuples(leftbatch.get(leftPointer), rightbatch.get(rightPointer), leftindex, rightindex) >= 0) {
+                //left bigger than right, go down right
+                System.out.println("start of while, right pointer is: " + rightPointer);
+
+                Tuple fromLeft = leftbatch.get(leftPointer);
+                Tuple toCompare = rightbatch.get(rightPointer);
+                System.out.println("in left > right: left tuple is: " + fromLeft._data + ", right tuple is: " + toCompare._data);
+                if (Tuple.compareTuples(fromLeft, toCompare, leftindex, rightindex) == 0) {
+                    outbatch.add(fromLeft.joinWith(toCompare));
+                    //rightPointer = i;
+                    System.out.println("joined");
+                    if (outbatch.isFull()) return outbatch;
                 }
-                /** Whenever a new left page came, we have to start the
-                 ** scanning of right table
-                 **/
-                try {
-                    in = new ObjectInputStream(new FileInputStream(rfname));
-                    eosr = false;
-                } catch (IOException io) {
-                    System.err.println("NestedJoin:error in reading the file");
-                    System.exit(1);
+                rightPointer++;
+                if (rightPointer == rightbatch.size()) {
+                    rightbatch = sortedRight.next();
+                    rightPointer = 0;
                 }
+
+                if (rightbatch == null) break;
+                System.out.println("end of while, right pointer is " + rightPointer);
 
             }
-            while (eosr == false) {
-                try {
-                    if (rcurs == 0 && lcurs == 0) {
-                        rightbatch = (Batch) in.readObject();
-                    }
-                    for (i = lcurs; i < leftbatch.size(); ++i) {
-                        for (j = rcurs; j < rightbatch.size(); ++j) {
-                            Tuple lefttuple = leftbatch.get(i);
-                            Tuple righttuple = rightbatch.get(j);
-                            if (lefttuple.checkJoin(righttuple, leftindex, rightindex)) {
-                                Tuple outtuple = lefttuple.joinWith(righttuple);
-                                outbatch.add(outtuple);
-                                if (outbatch.isFull()) {
-                                    if (i == leftbatch.size() - 1 && j == rightbatch.size() - 1) {  //case 1
-                                        lcurs = 0;
-                                        rcurs = 0;
-                                    } else if (i != leftbatch.size() - 1 && j == rightbatch.size() - 1) {  //case 2
-                                        lcurs = i + 1;
-                                        rcurs = 0;
-                                    } else if (i == leftbatch.size() - 1 && j != rightbatch.size() - 1) {  //case 3
-                                        lcurs = i;
-                                        rcurs = j + 1;
-                                    } else {
-                                        lcurs = i;
-                                        rcurs = j + 1;
-                                    }
-                                    return outbatch;
-                                }
-                            }
-                        }
-                        rcurs = 0;
-                    }
-                    lcurs = 0;
-                } catch (EOFException e) {
-                    try {
-                        in.close();
-                    } catch (IOException io) {
-                        System.out.println("NestedJoin: Error in reading temporary file");
-                    }
-                    eosr = true;
-                } catch (ClassNotFoundException c) {
-                    System.out.println("NestedJoin: Error in deserialising temporary file ");
-                    System.exit(1);
-                } catch (IOException io) {
-                    System.out.println("NestedJoin: Error in reading temporary file");
-                    System.exit(1);
+
+            //left smaller than right
+            /*if (leftbatch.isEmpty()) {
+                leftbatch = sortedLeft.next();
+                leftPointer = 0;
+            } else {
+                leftPointer++;
+            }*/
+
+            while (Tuple.compareTuples(leftbatch.get(leftPointer), rightbatch.get(rightPointer), leftindex, rightindex) <= 0) {
+                //right bigger than left, go down left
+                System.out.println("start of while, left pointer is: " + leftPointer);
+                Tuple fromRight = rightbatch.get(rightPointer);
+                Tuple toCompare = leftbatch.get(leftPointer);
+                System.out.println("in left < right: left tuple is: " + toCompare._data + ", right tuple is: " + fromRight._data);
+
+                if (Tuple.compareTuples(fromRight, toCompare, leftindex, rightindex) == 0) {
+                    outbatch.add(fromRight.joinWith(toCompare));
+                    System.out.println("joined");
+                    //rightPointer = i;
+                    if (outbatch.isFull()) return outbatch;
                 }
+                leftPointer++;
+                if (leftPointer == leftbatch.size()) {
+                    leftbatch = sortedLeft.next();
+                    leftPointer = 0;
+                }
+                if (leftbatch == null) break;
+                System.out.println("end of while, left pointer is " + leftPointer);
             }
+
+            //right smaller than left again
+            /*if (rightbatch.isEmpty()) {
+                rightbatch = sortedRight.next();
+                rightPointer = 0;
+            } else {
+                rightPointer++;
+            }*/
+
+            //adding matched tuples to output, ignore cases where it passes batch
+            /*if ((trackMatch.get(trackMatch.size())-1) == rightbatch.size()) {
+                //there are duplicates until eof, need to write to file for later comparison
+            }*/
+            /*for (int i=0; i< trackMatch.size(); i++) {
+                Tuple rightTuple = rightbatch.get(i);
+                outbatch.add(rightTuple.joinWith(fromLeft));
+                if(outbatch.isFull()) return outbatch;
+            }*/
+
         }
+
+        if (outbatch.isEmpty()) {
+            close();
+            return null;
+        }
+
         return outbatch;
     }
 

@@ -43,7 +43,16 @@ public class GroupBy extends Operator {
         last = null;
         int tuplesize = schema.getTupleSize();
         batchsize = Batch.getPageSize() / tuplesize;
-        ms = new MergeSort(base, as, OpType.GROUPBY, numBuff);
+
+        Schema baseSchema = base.getSchema();
+        ArrayList<Integer> attrIndex= new ArrayList<>();
+        for (int i = 0; i < as.size(); i++) {
+            Attribute attr = (Attribute) as.get(i);
+            int index = baseSchema.indexOf(attr);
+            attrIndex.add(index);
+        }
+
+        ms = new MergeSort(base, attrIndex, OpType.GROUPBY, numBuff);
         ms.setSchema(base.getSchema());
         ms.setNumBuff(4);
         if (!ms.open()) return false;
@@ -79,7 +88,7 @@ public class GroupBy extends Operator {
                 last = present;
             }
         }
-        
+
         return outbatch;
     }
 
@@ -98,4 +107,4 @@ public class GroupBy extends Operator {
         return newGroupBy;
     }
 
-} 
+}
