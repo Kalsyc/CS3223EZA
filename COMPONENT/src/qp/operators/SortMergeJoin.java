@@ -145,14 +145,15 @@ public class SortMergeJoin extends Join {
 
                     Tuple fromLeft = leftbatch.get(leftPointer);
                     Tuple toCompare = rightbatch.get(rightPointer);
-                    System.out.println("in left > right: left tuple is: " + fromLeft._data + ", right tuple is: " + toCompare._data);
+                    System.out.println("in left >= right: left tuple is: " + fromLeft._data + ", right tuple is: " + toCompare._data);
                     if (Tuple.compareTuples(fromLeft, toCompare, leftindex, rightindex) == 0) {
                         outbatch.add(fromLeft.joinWith(toCompare));
                         //rightPointer = i;
                         System.out.println("joined");
-                        if (outbatch.isFull()) return outbatch;
                     }
                     rightPointer++;
+                    if (outbatch.isFull()) return outbatch;
+
                     if (rightPointer == rightbatch.size()) {
                         rightbatch = sortedRight.next();
                         rightPointer = 0;
@@ -182,9 +183,10 @@ public class SortMergeJoin extends Join {
                         outbatch.add(fromRight.joinWith(toCompare));
                         System.out.println("joined");
                         //rightPointer = i;
-                        if (outbatch.isFull()) return outbatch;
                     }
                     leftPointer++;
+                    if (outbatch.isFull()) return outbatch;
+
                     if (leftPointer == leftbatch.size()) {
                         leftbatch = sortedLeft.next();
                         leftPointer = 0;
