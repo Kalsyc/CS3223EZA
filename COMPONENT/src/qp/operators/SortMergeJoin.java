@@ -27,15 +27,12 @@ public class SortMergeJoin extends Join {
 
     int lcurs;                      // Cursor for left side buffer
     int rcurs;                      // Cursor for right side buffer
-    boolean eosl;                   // Whether end of stream (left table) is reached
-    boolean eosr;                   // Whether end of stream (right table) is reached
 
     MergeSort sortedLeft;
     MergeSort sortedRight;
-    ArrayList<Integer> rightTrack = new ArrayList<>();
-    ArrayList<Integer> leftTrack = new ArrayList<>();
     int leftPointer;
     int rightPointer;
+    ArrayList<Tuple> trackDups = new ArrayList<>();
 
 
     public SortMergeJoin(Join jn) {
@@ -86,13 +83,11 @@ public class SortMergeJoin extends Join {
         //System.out.println("first tuple in sortedRight is: " + sortedRight.next().get(0));
 
 
-
         //System.out.println("first tuple in sortedLedt is: " + sortedLeft.next().get(0));
 
         /** initialize the cursors of input buffers **/
         lcurs = 0;
         rcurs = 0;
-
 
 
         if (!sortedLeft.open() || !sortedRight.open()) {
@@ -121,11 +116,8 @@ public class SortMergeJoin extends Join {
     // if no, then just read and match and output and get next left batch
     public Batch next() {
         System.out.println("in smj next");
-        if (eosl) {
-            return null;
-        }
-        outbatch=new Batch(batchsize);
 
+        outbatch = new Batch(batchsize);
         System.out.println("Size of leftbatch is:" + leftbatch.size());
         //System.out.println("first tuple in leftbatch is: " + leftbatch.get(0)._data);
 
@@ -135,90 +127,144 @@ public class SortMergeJoin extends Join {
         //rightTrack.add(0);
 
         Tuple prevTuple = null;
-        ArrayList<Integer> trackMatch = new ArrayList<>();
 
         while (leftbatch.size() != 0 && rightbatch.size() != 0) {
-            if (leftbatch.size() != 0 && rightbatch.size() != 0) {
-                while (Tuple.compareTuples(leftbatch.get(leftPointer), rightbatch.get(rightPointer), leftindex, rightindex) >= 0) {
-                    //left bigger than right, go down right
-                    System.out.println("start of while, right pointer is: " + rightPointer);
+            while (Tuple.compareTuples(leftbatch.get(leftPointer), rightbatch.get(rightPointer), leftindex, rightindex) >= 0) {
+                //left bigger than right, go down right
+                //System.out.println("start of while, right pointer is: " + rightPointer);
 
-                    Tuple fromLeft = leftbatch.get(leftPointer);
-                    Tuple toCompare = rightbatch.get(rightPointer);
-                    System.out.println("in left >= right: left tuple is: " + fromLeft._data + ", right tuple is: " + toCompare._data);
+                Tuple fromLeft = leftbatch.get(leftPointer);
+                Tuple toCompare = rightbatch.get(rightPointer);
+                System.out.println("in left >= right: left tuple is: " + fromLeft.dataAt(leftindex.get(0)) + ", right tuple is: " + toCompare.dataAt(rightindex.get(0)));
+
+                if (rightPointer != 0) {
+                    Tuple prevTup = rightbatch.get(rightPointer - 1);
+                    boolean same = true;
+                    for (int i=0; i<rightindex.size(); i++) {
+                        if (toCompare.dataAt(rightindex.get(i)) == prevTup.dataAt(rightindex.get(i))) {
+                            same = same && true;
+                        } else {
+                            same = false;
+                        }
+                    }
+                    if (same) {
+                        //prev tuple and current got same join attr values
+                        System.out.println("reading from trackdups");
+                        //same as prev
+                        for (int i = 0; i < trackDups.size(); i++) {
+                            outbatch.add(fromLeft.joinWith(trackDups.get(i)));
+                            System.out.println("joined in td");
+                        }
+
+                        leftPointer++;
+                        if (leftPointer == leftbatch.size()) {
+                            leftbatch = sortedLeft.next();
+                            leftPointer = 0;
+                        }
+
+                    } else {
+                        trackDups.clear();
+
+                        if (Tuple.compareTuples(fromLeft, toCompare, leftindex, rightindex) == 0) {
+                            outbatch.add(fromLeft.joinWith(toCompare));
+                            trackDups.add(toCompare);
+                            //rightPointer = i;
+                            System.out.println("joined");
+                        }
+                    }
+                } else {
+                    trackDups.clear();
+
                     if (Tuple.compareTuples(fromLeft, toCompare, leftindex, rightindex) == 0) {
                         outbatch.add(fromLeft.joinWith(toCompare));
+                        trackDups.add(toCompare);
                         //rightPointer = i;
                         System.out.println("joined");
                     }
-                    rightPointer++;
-                    if (outbatch.isFull()) return outbatch;
-
-                    if (rightPointer == rightbatch.size()) {
-                        rightbatch = sortedRight.next();
-                        rightPointer = 0;
-                    }
-
-                    if (rightbatch == null || rightbatch.size() == 0) break;
-                    System.out.println("end of while, right pointer is " + rightPointer);
-
                 }
 
-                //left smaller than right
-            /*if (leftbatch.isEmpty()) {
-                leftbatch = sortedLeft.next();
-                leftPointer = 0;
-            } else {
-                leftPointer++;
-            }*/
 
-                while (Tuple.compareTuples(leftbatch.get(leftPointer), rightbatch.get(rightPointer), leftindex, rightindex) <= 0) {
-                    //right bigger than left, go down left
-                    System.out.println("start of while, left pointer is: " + leftPointer);
-                    Tuple fromRight = rightbatch.get(rightPointer);
-                    Tuple toCompare = leftbatch.get(leftPointer);
-                    System.out.println("in left < right: left tuple is: " + toCompare._data + ", right tuple is: " + fromRight._data);
+                rightPointer++;
+
+                if (rightPointer == rightbatch.size()) {
+                    rightbatch = sortedRight.next();
+                    rightPointer = 0;
+                }
+
+                if (outbatch.isFull()) return outbatch;
+
+                if (rightbatch == null || rightbatch.size() == 0) break;
+                //System.out.println("end of while, right pointer is " + rightPointer);
+
+            }
+
+
+            while (Tuple.compareTuples(leftbatch.get(leftPointer), rightbatch.get(rightPointer), leftindex, rightindex) <= 0) {
+                //right bigger than left, go down left
+                //System.out.println("start of while, left pointer is: " + leftPointer);
+                Tuple fromRight = rightbatch.get(rightPointer);
+                Tuple toCompare = leftbatch.get(leftPointer);
+                System.out.println("in left < right: left tuple is: " + toCompare.dataAt(leftindex.get(0)) + ", right tuple is: " + fromRight.dataAt(rightindex.get(0)));
+
+                if (leftPointer != 0) {
+                    //find out if the join values are the same
+                    Tuple prevTup = leftbatch.get(leftPointer - 1);
+                    boolean same = true;
+                    for (int i=0; i<rightindex.size(); i++) {
+                        if (toCompare.dataAt(leftindex.get(i)) == prevTup.dataAt(leftindex.get(i))) {
+                            same = same && true;
+                        } else {
+                            same = false;
+                        }
+                    }
+
+                    if (same) {
+                        System.out.println("reading from trackdups");
+                        //same as prev
+                        for (int i = 0; i < trackDups.size(); i++) {
+                            outbatch.add(fromRight.joinWith(trackDups.get(i)));
+                            System.out.println("joined in td");
+
+                        }
+                        rightPointer++;
+                        if (rightPointer == rightbatch.size()) {
+                            rightbatch = sortedRight.next();
+                            rightPointer = 0;
+                        }
+                    } else {
+                        trackDups.clear();
+
+                        if (Tuple.compareTuples(fromRight, toCompare, leftindex, rightindex) == 0) {
+                            outbatch.add(fromRight.joinWith(toCompare));
+                            trackDups.add(toCompare);
+                            System.out.println("joined");
+                            //rightPointer = i;
+                        }
+                    }
+                } else {
+                    trackDups.clear();
 
                     if (Tuple.compareTuples(fromRight, toCompare, leftindex, rightindex) == 0) {
                         outbatch.add(fromRight.joinWith(toCompare));
+                        trackDups.add(toCompare);
                         System.out.println("joined");
                         //rightPointer = i;
                     }
-                    leftPointer++;
-                    if (outbatch.isFull()) return outbatch;
-
-                    if (leftPointer == leftbatch.size()) {
-                        leftbatch = sortedLeft.next();
-                        leftPointer = 0;
-                    }
-
-                    System.out.println("left batch is: " + leftbatch);
-                    if (leftbatch == null || leftbatch.size() == 0) break;
-                    System.out.println("end of while, left pointer is " + leftPointer);
                 }
 
-            } else {
-                return outbatch;
+                leftPointer++;
+
+                if (leftPointer == leftbatch.size()) {
+                    leftbatch = sortedLeft.next();
+                    leftPointer = 0;
+                }
+
+                if (outbatch.isFull()) return outbatch;
+
+                //System.out.println("left batch is: " + leftbatch);
+                if (leftbatch == null || leftbatch.size() == 0) break;
+                //System.out.println("end of while, left pointer is " + leftPointer);
             }
-
-            //right smaller than left again
-            /*if (rightbatch.isEmpty()) {
-                rightbatch = sortedRight.next();
-                rightPointer = 0;
-            } else {
-                rightPointer++;
-            }*/
-
-            //adding matched tuples to output, ignore cases where it passes batch
-            /*if ((trackMatch.get(trackMatch.size())-1) == rightbatch.size()) {
-                //there are duplicates until eof, need to write to file for later comparison
-            }*/
-            /*for (int i=0; i< trackMatch.size(); i++) {
-                Tuple rightTuple = rightbatch.get(i);
-                outbatch.add(rightTuple.joinWith(fromLeft));
-                if(outbatch.isFull()) return outbatch;
-            }*/
-
         }
 
         if (outbatch.isEmpty()) {
