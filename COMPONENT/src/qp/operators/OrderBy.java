@@ -1,6 +1,7 @@
 package qp.operators;
 import qp.utils.*;
 import java.util.ArrayList;
+import qp.optimizer.BufferManager;
 
 public class OrderBy extends Operator {
     
@@ -67,7 +68,7 @@ public class OrderBy extends Operator {
 
         ms = new MergeSort(base, attrIndex, OpType.ORDERBY, numBuff, isDesc);
         ms.setSchema(base.getSchema());
-        ms.setNumBuff(4);
+        ms.setNumBuff(BufferManager.getNumBuffer());
         if (!ms.open()) return false;
         return true;
     }

@@ -2,6 +2,7 @@ package qp.operators;
 import qp.utils.*;
 import java.util.ArrayList;
 import qp.utils.Attribute;
+import qp.optimizer.BufferManager;
 
 public class GroupBy extends Operator {
 
@@ -54,7 +55,7 @@ public class GroupBy extends Operator {
 
         ms = new MergeSort(base, attrIndex, OpType.GROUPBY, numBuff);
         ms.setSchema(base.getSchema());
-        ms.setNumBuff(4);
+        ms.setNumBuff(BufferManager.getNumBuffer());
         if (!ms.open()) return false;
         return true;
     }

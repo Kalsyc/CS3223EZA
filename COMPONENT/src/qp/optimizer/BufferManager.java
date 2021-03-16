@@ -17,6 +17,20 @@ public class BufferManager {
         buffPerJoin = numBuffer / numJoin;
     }
 
+    public BufferManager(int numBuffer) {
+        this.numBuffer = numBuffer;
+        this.numJoin = 0;
+        buffPerJoin = 0;
+    }
+
+    public static int getNumBuffer() {
+        return numBuffer;
+    }
+
+    public static int getNumJoin() {
+        return numJoin;
+    }
+
     public static int getBuffersPerJoin() {
         return buffPerJoin;
     }

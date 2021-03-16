@@ -151,17 +151,19 @@ public class SortMergeJoin extends Join {
                         outbatch.add(fromLeft.joinWith(toCompare));
                         //rightPointer = i;
                         System.out.println("joined");
+
                     }
                     rightPointer++;
-                    if (outbatch.isFull()) return outbatch;
-
+                    
+                    System.out.println("end of while, right pointer is " + rightPointer);
                     if (rightPointer == rightbatch.size()) {
+                        System.out.println("Reset the right pointer");
                         rightbatch = sortedRight.next();
                         rightPointer = 0;
                     }
-
+                    if (outbatch.isFull()) return outbatch;
                     if (rightbatch == null || rightbatch.size() == 0) break;
-                    System.out.println("end of while, right pointer is " + rightPointer);
+                    
 
                 }
 
@@ -186,12 +188,13 @@ public class SortMergeJoin extends Join {
                         //rightPointer = i;
                     }
                     leftPointer++;
-                    if (outbatch.isFull()) return outbatch;
+                    
 
                     if (leftPointer == leftbatch.size()) {
                         leftbatch = sortedLeft.next();
                         leftPointer = 0;
                     }
+                    if (outbatch.isFull()) return outbatch;
 
                     System.out.println("left batch is: " + leftbatch);
                     if (leftbatch == null || leftbatch.size() == 0) break;
