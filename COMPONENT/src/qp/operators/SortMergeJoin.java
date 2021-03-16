@@ -72,7 +72,8 @@ public class SortMergeJoin extends Join {
         System.out.println("=====left schema====");
         Debug.PPrint(left.getSchema());
         System.out.println();
-        //System.out.println("sorting left");
+        System.out.println("sorting left");
+        System.out.println("The number of buffers: " + numBuff);
         sortedLeft = new MergeSort(left, leftindex, optype, numBuff, "left");
         //System.out.println("DONE SORTING LEFT");
 

@@ -1,0 +1,8 @@
+6
+192
+flno INTEGER 200 PK 4
+from STRING 44 NK 88
+to STRING 44 NK 88
+distance INTEGER 200 NK 4
+departs INTEGER 200 NK 4
+arrives INTEGER 200 NK 4
