@@ -154,9 +154,13 @@ public class MergeSort extends Operator {
         toDelete.delete();
 
         //close reader
-        for (int i=0; i<sortedRunReaders.size(); i++) {
-            sortedRunReaders.get(i).close();
+        if (sortedRunReaders != null) {
+            for (int i=0; i<sortedRunReaders.size(); i++) {
+                sortedRunReaders.get(i).close();
+
+            }
         }
+
         out.close();
         return true;
     }
