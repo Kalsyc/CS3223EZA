@@ -11,8 +11,8 @@ public class MergeSort extends Operator {
     protected int numBuff;
 
     //for comparison
-    protected ArrayList<Attribute> attrSet;
-    protected int[] attrIndexArr;
+    //protected ArrayList<Attribute> attrSet;
+    protected ArrayList<Integer> attrIndexArr;
     protected boolean isDesc;
 
     //used in generate sorted runs
@@ -27,7 +27,7 @@ public class MergeSort extends Operator {
     ArrayList<TupleReader> sortedRunReaders;
     protected ArrayList<String> sortedRuns; //filenames of sorted runs
 
-    private String fileName = "mergesort";
+    protected String fileName = "mergesort";
     //final file reader
     protected TupleReader out;
 
@@ -39,29 +39,50 @@ public class MergeSort extends Operator {
 //        this.fileName = fileName;
     }*/
 
-    public MergeSort(Operator base, ArrayList<Attribute> as, int type, int numBuff, boolean isDesc) {
+    public MergeSort(Operator base, ArrayList<Integer> as, int type, int numBuff, String fileName) {
         super(type);
         this.base = base;
-        this.attrSet = as;
+        this.attrIndexArr = as;
+        this.isDesc = false;
+        this.numBuff = numBuff;
+        this.fileName = fileName;
+    }
+
+    public MergeSort(Operator base, ArrayList<Integer> as, int type, int numBuff) {
+        super(type);
+        this.base = base;
+        this.attrIndexArr = as;
+        this.isDesc = false;
+        this.numBuff = numBuff;
+    }
+
+    public MergeSort(Operator base, ArrayList<Integer> as, int type, int numBuff, boolean isDesc) {
+        super(type);
+        this.base = base;
+        this.attrIndexArr = as;
+        this.numBuff = numBuff;
         this.isDesc = isDesc;
     }
 
 
-    public MergeSort(Operator base, ArrayList<Attribute> as, int type, int numBuff) {
+    /*public MergeSort(Operator base, ArrayList<Attribute> as, int type, int numBuff) {
         super(type);
         this.base = base;
         this.attrSet = as;
         this.isDesc = false;
-    }
+    }*/
 
     //read in the tuples, generate sorted runs, do the merge and write
     public boolean open() {
         System.out.println("SortMerge:-----------------in open--------------");
+        System.out.println("schema for this join is");
+        Debug.PPrint(base.getSchema());
+
         System.out.println("Number of buffers is: " + numBuff);
         eos = false;  // Since the stream is just opened
 
         /** Set number of tuples per page**/
-        int tuplesize = schema.getTupleSize();
+        int tuplesize = base.getSchema().getTupleSize();
         batchSize = Batch.getPageSize() / tuplesize;
 
         System.out.println("Max batch size is " + batchSize);
@@ -70,27 +91,20 @@ public class MergeSort extends Operator {
             return false;
         } else {
             //get all the attributes for use in tuple comparison later
-            Schema baseSchema = base.getSchema();
-            attrIndexArr = new int[attrSet.size()];
-            for (int i = 0; i < attrSet.size(); i++) {
-                Attribute attr = (Attribute) attrSet.get(i);
-                System.out.println("Wth, this is " + attr.getColName());
-                int index = baseSchema.indexOf(attr);
-                attrIndexArr[i] = index;
-            }
+            //if (attrIndexArr == null) {
 
-            // Phase 1: Generate sorted runs
-            generateSortedRuns();
+                // Phase 1: Generate sorted runs
+                generateSortedRuns();
 
-            // Phase 2: Merge sorted runs
-            mergeSortedRuns();
+                // Phase 2: Merge sorted runs
+                mergeSortedRuns();
 
-            if (sortedRuns.size() != 1) {
-                return false;
-            }
-            out = new TupleReader(sortedRuns.get(0), batchSize);
-            out.open();
-            //debugging, printing all
+                if (sortedRuns.size() != 1) {
+                    return false;
+                }
+                out = new TupleReader(sortedRuns.get(0), batchSize);
+                out.open();
+                //debugging, printing all
             /*for (int i=0; i<124; i++) {
                 Tuple next = out.next();
                 if (next == null) {
@@ -99,8 +113,8 @@ public class MergeSort extends Operator {
                     System.out.println(next._data);
                 }
             }*/
-            return true;
-        }
+            }
+        return true;
     }
 
     //next has to return the next set of SORTED tuples --> meaning calling open will have to sort the tuples
@@ -140,9 +154,13 @@ public class MergeSort extends Operator {
         toDelete.delete();
 
         //close reader
-        for (int i=0; i<sortedRunReaders.size(); i++) {
-            sortedRunReaders.get(i).close();
+        if (sortedRunReaders != null) {
+            for (int i=0; i<sortedRunReaders.size(); i++) {
+                sortedRunReaders.get(i).close();
+
+            }
         }
+
         out.close();
         return true;
     }
@@ -159,9 +177,9 @@ public class MergeSort extends Operator {
             tuplesInRun.clear();
             //one sorted run can have (batch x num buffers) of tuples
             for (int i = 0; i < numBuff; i++) {
-                System.out.println("Batch is: " + nextBatch);
+               // System.out.println("Batch is: " + nextBatch);
                 if (nextBatch != null) {
-                    System.out.println("Batch size is " + nextBatch.size());
+                    //System.out.println("Batch size is " + nextBatch.size());
 
                     for (int j = 0; j < nextBatch.size(); j++) {
                         //System.out.println("Batch number: " + i + " | tuple is " + nextBatch.get(j) + " with data: " + nextBatch.get(j)._data);
@@ -175,7 +193,7 @@ public class MergeSort extends Operator {
                 //System.out.println("Next batch size is: " + nextBatch.size());
             }
 
-            System.out.println("tuplesinrun size is: " + tuplesInRun.size() + " Num tuples size is: " + numtuples);
+            //System.out.println("tuplesinrun size is: " + tuplesInRun.size() + " Num tuples size is: " + numtuples);
             //Sort the tuples in the run
             if (isDesc) {
                 Collections.sort(tuplesInRun, new AttributeSort(attrIndexArr, isDesc));
@@ -192,8 +210,8 @@ public class MergeSort extends Operator {
                 writeTempFile.next(tuplesInRun.get(i));
             }
 
-            System.out.println("Number of tuples written is: " + writeTempFile.getNumTuple());
-            System.out.println("Tuples are written to: " + tempFileName);
+            //System.out.println("Number of tuples written is: " + writeTempFile.getNumTuple());
+            //System.out.println("Tuples are written to: " + tempFileName);
             System.out.println();
             writeTempFile.close();
 
@@ -211,10 +229,10 @@ public class MergeSort extends Operator {
             numRuns++;
         }
 
-        System.out.println("Sorted runs are:");
+        /*System.out.println("Sorted runs are:");
         for (int i = 0; i < sortedRuns.size(); i++) {
             System.out.println(sortedRuns.get(i));
-        }
+        }*/
 
     }
 
@@ -229,7 +247,7 @@ public class MergeSort extends Operator {
         //only can merge these number of runs at one time
         int numInputBuff = numBuff - 1; //1 for output buffer
         ArrayList<String> toMerge = new ArrayList<>();
-        System.out.println("initial number of sorted runs is: " + sortedRuns.size());
+        //System.out.println("initial number of sorted runs is: " + sortedRuns.size());
 
         while (sortedRuns.size() > 1) {
             for (int i = 0; i < numInputBuff; i++) {
@@ -238,7 +256,7 @@ public class MergeSort extends Operator {
                 }
             }
 
-            System.out.println("The runs to merge are");
+            //System.out.println("The runs to merge are");
             for (int i = 0; i < toMerge.size(); i++) {
                 System.out.println(toMerge.get(i));
                 sortedRuns.remove(toMerge.get(i));
@@ -265,7 +283,7 @@ public class MergeSort extends Operator {
                 toDelete.delete();
             }
             toMerge.clear();
-            System.out.println("after one loop! number of sorted runs is: " + sortedRuns.size());
+            //System.out.println("after one loop! number of sorted runs is: " + sortedRuns.size());
         }
 
         System.out.println("End of merging sorted runs. Number of runs is: " + sortedRuns.size());
@@ -274,7 +292,7 @@ public class MergeSort extends Operator {
     public String merge(ArrayList<String> toMerge) {
         System.out.println("----------------In intermediate merge------------------");
         int numRuns = toMerge.size();
-        System.out.println("numruns to merge is: " + numRuns);
+        //System.out.println("numruns to merge is: " + numRuns);
         sortedRunReaders = new ArrayList<>();
 
         //preparing output file to write to
@@ -285,7 +303,7 @@ public class MergeSort extends Operator {
         Batch outputBuffer = new Batch(batchSize);
         //set up to read from sorted files
         for (int i = 0; i < numRuns; i++) {
-            System.out.println("reading from: " + toMerge.get(i));
+            //System.out.println("reading from: " + toMerge.get(i));
             TupleReader tupread = new TupleReader(toMerge.get(i), batchSize);
             tupread.open();
             sortedRunReaders.add(tupread);
@@ -298,7 +316,7 @@ public class MergeSort extends Operator {
         HashMap<Tuple, Integer> trackTuple = new HashMap<>();
         //initial filling of buffer //not utilising full buffer if num buff > num runs left
         for (int i = 0; i < numRuns; i++) {
-            System.out.println("Initial filling of buffer");
+            //System.out.println("Initial filling of buffer");
             //System.out.println("double check READING FROM FILE: " + sortedRunReaders.get(i).getFileName());
             for (int j = 0; j < batchSize; j++) {
                 //wtf this reading is wrong why the fuck
@@ -312,7 +330,7 @@ public class MergeSort extends Operator {
             }
         }
 
-        System.out.println("Done with intial buffer fill");
+        //System.out.println("Done with intial buffer fill");
         //number of tuples in intial buffer should be numRuns x max batch size
         /*System.out.println("Number of tuples in input buffer is " + inputBuffers.size());
         System.out.println("---------------Printing tuples in input buffer--------------");
@@ -367,7 +385,7 @@ public class MergeSort extends Operator {
             }
         }
 
-        System.out.println("Out of while-loop, num tuples in input buffer is: " + inputBuffers.size());
+        //System.out.println("Out of while-loop, num tuples in input buffer is: " + inputBuffers.size());
 
         //left the records in output buffer to be written
         if (!outputBuffer.isEmpty()) {
@@ -385,15 +403,15 @@ public class MergeSort extends Operator {
     }
 
     class AttributeSort implements Comparator<Tuple> {
-        private int[] attrIndexArr;
+        private ArrayList<Integer> attrIndexArr;
         private boolean isDesc;
 
-        public AttributeSort(int[] attrIndexArr, boolean isDesc) {
+        public AttributeSort(ArrayList<Integer> attrIndexArr, boolean isDesc) {
             this.attrIndexArr = attrIndexArr;
             this.isDesc = isDesc;
         }
 
-        public AttributeSort(int[] attrIndexArr) {
+        public AttributeSort(ArrayList<Integer> attrIndexArr) {
             this.attrIndexArr = attrIndexArr;
         }
 
@@ -403,11 +421,11 @@ public class MergeSort extends Operator {
             if (a == null || b == null) {
                 return 1;
             } else {
-                for (int i = 0; i < attrIndexArr.length; i++) {
+                for (int i = 0; i < attrIndexArr.size(); i++) {
                     if (isDesc) {
-                        diff = Tuple.compareTuples(b, a, attrIndexArr[i]);
+                        diff = Tuple.compareTuples(b, a, attrIndexArr.get(i));
                     } else {
-                        diff = Tuple.compareTuples(a, b, attrIndexArr[i]);
+                        diff = Tuple.compareTuples(a, b, attrIndexArr.get(i));
                     }
                     //return the first successful comparison made
                     if (diff != 0) {
