@@ -136,7 +136,7 @@ public class SortMergeJoin extends Join {
         //rightTrack.add(0);
 
         //if array list not empty --> means prev got added, so you join with it
-        while (leftbatch != null && rightbatch != null) {
+        while (leftbatch != null && rightbatch != null && leftbatch.size() != 0 && rightbatch.size() !=0) {
             //check next left
             while (Tuple.compareTuples(leftbatch.get(leftPointer), rightbatch.get(rightPointer), leftindex, rightindex) >= 0) {
                 //left bigger than right, go down right
@@ -158,13 +158,14 @@ public class SortMergeJoin extends Join {
 
                 if (rightPointer == rightbatch.size()) {
                     rightbatch = sortedRight.next();
+                    System.out.println("-------------------------------------!right batch is: " + rightbatch);
                     rightPointer = 0;
                 }
 
                 prevLeftTuple = fromLeft;
                 if (outbatch.isFull()) return outbatch;
 
-                if (rightbatch == null || rightbatch.size() == 0) break;
+                if (rightbatch == null || rightbatch.size() == 0) return outbatch;
                 //System.out.println("end of while, right pointer is " + rightPointer);
             }
 
@@ -173,6 +174,8 @@ public class SortMergeJoin extends Join {
                 leftPointer++;
                 if (leftPointer == leftbatch.size()) {
                     leftbatch = sortedLeft.next();
+                    System.out.println("------------------------------------------left batch is: " + leftbatch);
+
                     leftPointer = 0;
                 }
             }
@@ -223,6 +226,8 @@ public class SortMergeJoin extends Join {
 
                 if (leftPointer == leftbatch.size()) {
                     leftbatch = sortedLeft.next();
+                    System.out.println("---------------------------------------------left batch is: " + leftbatch);
+
                     leftPointer = 0;
                 }
                 prevRightTuple = fromRight;
@@ -239,12 +244,14 @@ public class SortMergeJoin extends Join {
                 rightPointer++;
                 if (rightPointer == rightbatch.size()) {
                     rightbatch = sortedRight.next();
+                    System.out.println("----------------------------------------------right batch is: " + rightbatch);
+
                     rightPointer = 0;
                 }
             }
 
             //System.out.println("left batch is: " + leftbatch);
-            if (rightbatch == null || rightbatch.size() == 0) break;
+            if (rightbatch == null || rightbatch.size() == 0) return outbatch;
 
             if (prevRightTuple != null) {
                 System.out.println("prevrighttupple: " + prevRightTuple._data);
