@@ -148,14 +148,19 @@ public class PlanCost {
         switch (joinType) {
 
             case JoinType.NESTEDJOIN:
-                joincost = leftpages * rightpages;
+                joincost = 99;//leftpages * rightpages;
                 break;
             case JoinType.BLOCKNESTED:
-                joincost = (int) Math.ceil(leftpages / (numbuff- 2)) * rightpages;
+                joincost = 99;//(int) Math.ceil(leftpages / (numbuff- 2)) * rightpages;
                 break;
             case JoinType.SORTMERGE:
-                joincost = leftpages;  
-            //joincost = (int) Math.ceil(leftpages / (numbuff- 2)) * rightpages;
+                joincost = 1;
+                //Sorting cost + Merging cost
+                /*
+                joincost = 2 * (rightpages) * (1 + (int) Math.ceil(Math.log(Math.ceil(rightpages / numbuff)) / Math.log(numbuff - 1))) 
+                            + 2 * (leftpages) * (1 + (int) Math.ceil(Math.log(Math.ceil(leftpages / numbuff)) / Math.log(numbuff - 1)))
+                            + leftpages + rightpages;
+                */
                 break;
             default:
                 System.out.println(" is not supported");
@@ -208,7 +213,7 @@ public class PlanCost {
             Attribute attri = schema.getAttribute(i);
             long oldvalue = ht.get(attri);
             long newvalue = (long) Math.ceil(((double) outtuples / (double) intuples) * oldvalue);
-            ht.put(attri, outtuples);
+            ht.put(attri, newvalue); // should be bug
         }
         return outtuples;
     }

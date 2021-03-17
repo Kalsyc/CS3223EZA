@@ -17,7 +17,6 @@ public class OrderBy extends Operator {
     Batch outbatch;
     int start;
     Tuple last;
-    
 
     public OrderBy(Operator base, ArrayList<Attribute> orderList, boolean isDesc, int type) {
         super(type);
