@@ -40,6 +40,8 @@ public class SortMergeJoin extends Join {
     boolean canAdd;
     boolean wasFull;
 
+    int check = 0;
+
 
     public SortMergeJoin(Join jn) {
         super(jn.getLeft(), jn.getRight(), jn.getConditionList(), jn.getOpType());
@@ -120,10 +122,11 @@ public class SortMergeJoin extends Join {
     public Batch next() {
         System.out.println("Running next function in SortMergeJoin");
         outbatch = new Batch(batchsize);
-        System.out.println("Size of leftbatch is:" + leftbatch.size());
-        System.out.println("Size of rightbatch is:" + rightbatch.size());
+        //System.out.println("Size of leftbatch is:" + leftbatch.size());
+        //System.out.println("Size of rightbatch is:" + rightbatch.size());
 
         while (leftbatch != null && rightbatch != null && leftbatch.size() > 0 && rightbatch.size() > 0) {
+
             System.out.println("Within the massive while loop");
             //Get left and right tuple from both batches
             leftTuple = leftbatch.get(leftPointer);
@@ -148,7 +151,18 @@ public class SortMergeJoin extends Join {
                 wasFull = false;
                 continue;
             }
-            if (trackDups.size() > 0 && Tuple.compareTuples(leftTuple, trackDups.get(0), leftindex, rightindex) == 0 && dupPointer < trackDups.size()) {
+            /*
+            if (trackDups.size() > 0 && (int) trackDups.get(0).dataAt(0) == 10) {
+                System.out.println(trackDups.size() > 0);
+                System.out.println(Tuple.compareTuples(leftTuple, trackDups.get(0), leftindex, rightindex));
+                System.out.println(dupPointer);
+                System.out.println(trackDups.size());
+                System.exit(1);
+            }
+            */
+            
+            // && dupPointer < trackDups.size()
+            if (trackDups.size() > 0 && Tuple.compareTuples(leftTuple, trackDups.get(0), leftindex, rightindex) == 0 && dupPointer <= trackDups.size()) {
                 System.out.println("The algorithm encounters a left tuple that has the same value as the previous tuple and that the previous tuple was joined");
                 dupPointer = 0;
                 while (dupPointer < trackDups.size()) {
@@ -161,7 +175,7 @@ public class SortMergeJoin extends Join {
                         return outbatch;
                     }
                 }
-                continue;
+                //continue;
             }
 
             //If left smaller than right, continue search down left
@@ -232,6 +246,7 @@ public class SortMergeJoin extends Join {
                         outbatch.add(leftTuple.joinWith(trackDups.get(dupPointer)));
                         System.out.println("Joined " + leftTuple._data + " with " + trackDups.get(dupPointer)._data);
                         dupPointer++;
+                        System.out.println("Increment dup pointer to " + dupPointer);
                         if (outbatch.isFull()) {
                             System.out.println("Oh dear! Outbatch is full in adding add the back!");
                             wasFull = true;
@@ -239,6 +254,15 @@ public class SortMergeJoin extends Join {
                         }
                     }
                     leftPointer++;
+                    
+                    if (leftPointer == leftbatch.size()) { //If left pointer exceeds the batch size, go to the next batch and continue searching
+                        leftbatch = sortedLeft.next(); //Left batch goes to the next one
+                        leftPointer = 0; //leftPointer reverts back to 0
+                        if (leftbatch == null || leftbatch.size() == 0) {
+                            break;
+                        }
+                    }
+                    
                 }
             }
         }

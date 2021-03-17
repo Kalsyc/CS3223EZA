@@ -148,13 +148,13 @@ public class PlanCost {
         switch (joinType) {
 
             case JoinType.NESTEDJOIN:
-                joincost = 1;
+                joincost = 99;//leftpages * rightpages;
                 break;
             case JoinType.BLOCKNESTED:
-                joincost = (int) Math.ceil(leftpages / (numbuff- 2)) * rightpages;
+                joincost = 99;//(int) Math.ceil(leftpages / (numbuff- 2)) * rightpages;
                 break;
             case JoinType.SORTMERGE:
-                joincost = leftpages;  
+                joincost = 1;//leftpages * rightpages; 
             //joincost = (int) Math.ceil(leftpages / (numbuff- 2)) * rightpages;
                 break;
             default:
