@@ -205,7 +205,7 @@ public class SortMergeJoin extends Join {
                 }
 
             }
-            
+
             while (Tuple.compareTuples(leftbatch.get(leftPointer), rightbatch.get(rightPointer), leftindex, rightindex) <= 0) {
                 //right bigger than left, go down left
                 //System.out.println("start of while, left pointer is: " + leftPointer);

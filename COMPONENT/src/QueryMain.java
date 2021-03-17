@@ -183,6 +183,7 @@ public class QueryMain {
                 printTuple(resultbatch.get(i));
             }
         }
+
         root.close();
         out.close();
 
