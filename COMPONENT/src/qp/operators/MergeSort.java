@@ -167,7 +167,7 @@ public class MergeSort extends Operator {
 
     public void generateSortedRuns() {
         //an arraylist of tuples that fit into B buffers
-        System.out.println("Generating sorted runs");
+        //System.out.println("Generating sorted runs");
         sortedRuns = new ArrayList<>();
         Batch nextBatch = base.next();
         ArrayList<Tuple> tuplesInRun = new ArrayList<>();
@@ -258,7 +258,7 @@ public class MergeSort extends Operator {
 
             //System.out.println("The runs to merge are");
             for (int i = 0; i < toMerge.size(); i++) {
-                System.out.println(toMerge.get(i));
+                //System.out.println(toMerge.get(i));
                 sortedRuns.remove(toMerge.get(i));
             }
 
@@ -290,7 +290,7 @@ public class MergeSort extends Operator {
     }
 
     public String merge(ArrayList<String> toMerge) {
-        System.out.println("----------------In intermediate merge------------------");
+        //System.out.println("----------------In intermediate merge------------------");
         int numRuns = toMerge.size();
         //System.out.println("numruns to merge is: " + numRuns);
         sortedRunReaders = new ArrayList<>();
