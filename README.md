@@ -46,3 +46,11 @@ In our project, there are 2 folders (`testcases` and `experiment`) where you can
 In order to generate new data from the `.det` files, run `java RandomDB <tablename> <no. of records>` and then `java ConvertTxtToTbl <tablename>` right after.
 
 Currently, the default tables in `experiment` have about 10,000 records each.
+
+## Implementation Details
+### External Merge Sort
+
+The external sorting algorithm implemented in the query engine is the k-way merge sort algorithm learnt in lecture where sorted runs are generated.
+
+
+## Our Experimental Results
