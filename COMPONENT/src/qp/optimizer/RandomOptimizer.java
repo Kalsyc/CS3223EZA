@@ -407,7 +407,7 @@ public class RandomOptimizer {
      * Modifies the schema of operators which are modified due to selecing an alternative neighbor plan
      **/
     private void modifySchema(Operator node) {
-        System.out.println(node.getOpType());
+        //System.out.println(node.getOpType());
 
         if (node.getOpType() == OpType.JOIN) {
             Operator left = ((Join) node).getLeft();
@@ -427,7 +427,7 @@ public class RandomOptimizer {
         } else if (node.getOpType() == OpType.DISTINCT) {
             Operator base = ((Distinct) node).getBase();
             ArrayList attrlist = ((Distinct) node).getProjAttr();
-            System.out.println(attrlist);
+            //System.out.println(attrlist);
             modifySchema(base);
             node.setSchema(base.getSchema().subSchema(attrlist));
         } else if (node.getOpType() == OpType.ORDERBY) {

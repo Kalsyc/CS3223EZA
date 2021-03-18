@@ -117,7 +117,7 @@ public class SortMergeJoin extends Join {
     //if matched value matches the ENTIRE batch, check if next value on right is same as curr, if yes, write the left batch to file, read in next one write till all dups written
     // if no, then just read and match and output and get next left batch
     public Batch next() {
-        System.out.println("Running next function in SortMergeJoin");
+        //System.out.println("Running next function in SortMergeJoin");
         outbatch = new Batch(batchsize);
         //System.out.println("Size of leftbatch is:" + leftbatch.size());
         //System.out.println("Size of rightbatch is:" + rightbatch.size());
