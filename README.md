@@ -71,4 +71,4 @@ The `DISTINCT` operator is implemented with the help of the `MergeSort` operator
 The `GroupBy` operator is implemented by sorting the tuples by the list of GroupBy attributes with the help of the `MergeSort` operator.
 
 ### OrderBy
-The `OrderBy` operator is implemented by using the `MergeSort` operator, similar to the `GroupBy` operator. However, the parser had to be adapted in order to include the `DESC` keyword. If this `DESC` keyword is present in the query, the variables within the comparator in the `MergeSort` operator are then swapped to ensure that the tuples are sorted in reverse order.
+The `OrderBy` operator is implemented by using the `MergeSort` operator, similar to the `GroupBy` operator. However, the parser had to be adapted in order to include the `DESC` keyword. If this `DESC` keyword is present in the query, the variables within the comparator in the `MergeSort` operator are then swapped to ensure that the tuples are sorted in reverse order. However, if the `DESC` keyword is missing, the query engine will assume that the tuples are to be sorted in `ASC` order.
