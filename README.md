@@ -60,6 +60,19 @@ The Block Nested Join operator is implemented on top of the given Nested Join wi
 
 ### Sort Merge Join
 
-The Sort Merge Join operator is implemented with the help of the External Sort which ensures that the left and right tables-to-be-joined are sorted first before we start the joining process. 
+The Sort Merge Join operator is implemented with the help of the External Sort which ensures that the left and right tables-to-be-joined are sorted first before we start the joining process. Afterwhich, we start the joining process by comparing the tuples on the left and right batches and see if they are able to be joined. The algorithm utilizes an `ArrayList` to keep track of the duplicate tuples that may be found on the right table so that we may be able to backtrack and join tuples if necessary.<br>
+
+The algorithm initializes with a left pointer and a right pointer which point to the current considered tuples within the two batches. If the left tuple is larger than the right tuple, we increment the right pointer and traverse down the right tuple till we find a match or that the left tuple is smaller. If the left and right tuples finally match, we then add it to the array list and then join afterwards. However, if the left tuple is smaller than the right tuple, we traverse down the left until we either find a match or that the left tuple is larger than the right tuple.
+
+### Distinct:
+The `DISTINCT` operator is implemented with the help of the `MergeSort` operator. Once a sorted input tuple is retrieved from the `MergeSort` operator, it is checked against the output buffer. If it already exists, the tuple is discarded, if not, it is added to the output buffer. 
+
+### GroupBy
+The `GroupBy` operator is implemented by sorting the tuples by the list of GroupBy attributes with the help of the `MergeSort` operator.
+
+### OrderBy
+The `OrderBy` operator is implemented by using the `MergeSort` operator, similar to the `GroupBy` operator. However, the parser had to be adapted in order to include the `DESC` keyword. If this `DESC` keyword is present in the query, the variables within the comparator in the `MergeSort` operator are then swapped to ensure that the tuples are sorted in reverse order.
 
 ## Our Experimental Results
+
+### Experiment 1
