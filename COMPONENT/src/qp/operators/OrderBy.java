@@ -114,7 +114,7 @@ public class OrderBy extends Operator {
 
     public Object clone() {
         Operator newbase = (Operator) base.clone();
-        OrderBy newOrderBy = new OrderBy(newbase, as, optype);
+        OrderBy newOrderBy = new OrderBy(newbase, as, isDesc, optype);
         Schema newSchema = (Schema) newbase.getSchema().clone();
         newOrderBy.setSchema(newSchema);
         return newOrderBy;
